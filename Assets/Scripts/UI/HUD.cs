@@ -17,7 +17,7 @@ public class HUD : MonoBehaviour
     public const string Controls =
         "WASD — движение    Shift — бег    Пробел — прыжок    Ctrl — перекат\n" +
         "ЛКМ — базовое заклинание    1–4 — заклинания    Tab — сменить набор    Q — Протего\n" +
-        "F — Древняя магия    H/J/K — зелья    E — взаимодействие    I — инвентарь    V — карта    F5/F9 — сохранить/загрузить    B — метла    Esc — пауза";
+        "F — Древняя магия    H/J/K — зелья    E — взаимодействие    I — инвентарь    V — карта    F5/F9 — сохранить/загрузить    B — метла    T — промотать время    O — журнал    Esc — пауза";
 
     Texture2D white, fadeLeft;
     GUIStyle sSmall, sMed, sBig, sHuge, sTiny, sMicro;
@@ -162,12 +162,13 @@ public class HUD : MonoBehaviour
         if (cam == null || gm == null || gm.player == null) return;
         GUI.depth = 0;
 
-        if (GameState.Mode == GameMode.Map || GameState.Mode == GameMode.Service) return;
+        if (GameState.Mode == GameMode.Map || GameState.Mode == GameMode.Service || GameState.Mode == GameMode.Journal) return;
         if (GameState.Mode == GameMode.Title) { DrawTitle(); return; }
         if (GameState.Mode == GameMode.Victory) { DrawVictory(); return; }
 
         DrawWorldUI(cam, gm.player);
         DrawPlayerHUD(gm.player);
+        DrawClock();
         DrawQuest(cam);
         DrawToasts();
         DrawHurt(gm.player);
@@ -227,7 +228,7 @@ public class HUD : MonoBehaviour
             Bar(new Rect(p.x - w / 2, p.y - 6 * S, w, 8 * S), t.health.Frac, new Color(0.85f, 0.15f, 0.12f), new Color(0, 0, 0, 0.6f));
             if (e != null && e.Telegraphing)
                 Text(new Rect(p.x - 30 * S, p.y - 80 * S, 60 * S, 50 * S), "!", sBig, e.TelegraphRed ? new Color(1f, 0.2f, 0.15f) : new Color(1f, 0.85f, 0.2f), TextAnchor.MiddleCenter);
-            string status = e == null ? null : e.Charmed ? "под Империо" : e.frozenT > 0f ? "заморожен" : e.crucioT > 0f ? "Круцио" : e.disarmT > 0f ? "обезоружен" : null;
+            string status = e == null ? null : e.Charmed ? "под Империо" : e.frozenT > 0f ? "заморожен" : e.crucioT > 0f ? "Круцио" : e.disarmT > 0f ? "обезоружен" : e.slowT > 0f ? "замедлен" : null;
             if (status != null)
                 Text(new Rect(p.x - 80 * S, p.y + 4 * S, 160 * S, 24 * S), status, sTiny, e.Charmed ? new Color(0.95f, 0.95f, 0.5f) : new Color(0.7f, 0.9f, 1f), TextAnchor.MiddleCenter);
             else if (e != null && e.levitateT > 0f)
@@ -268,9 +269,19 @@ public class HUD : MonoBehaviour
             Text(new Rect(fp.x - 100 * S, fp.y - 20 * S, 200 * S, 40 * S), f.text, sMed, c, TextAnchor.MiddleCenter);
         }
 
-        // Прицел.
+        // Прицел и счётчик комбо базовой атаки.
         if (GameState.Playing && !pc.onBroom)
+        {
             Box(new Rect(Screen.width / 2f - 2 * S, Screen.height / 2f - 2 * S, 4 * S, 4 * S), new Color(1, 1, 1, 0.8f));
+            int combo = pc.caster.Combo;
+            if (combo > 0)
+            {
+                int k = (combo - 1) % 3 + 1;
+                for (int i = 0; i < 3; i++)
+                    Box(new Rect(Screen.width / 2f - 16 * S + i * 12 * S, Screen.height / 2f + 14 * S, 8 * S, 4 * S),
+                        i < k ? (k == 3 ? new Color(1f, 0.6f, 0.2f) : new Color(1f, 0.9f, 0.5f)) : new Color(1, 1, 1, 0.25f));
+            }
+        }
     }
 
     void DrawPlayerHUD(PlayerController pc)
@@ -302,6 +313,15 @@ public class HUD : MonoBehaviour
         y -= 24 * S;
         Bar(new Rect(x, y, colW, 24 * S), pc.health.Frac, new Color(0.75f, 0.12f, 0.12f), new Color(0, 0, 0, 0.6f));
         Text(new Rect(x, y, colW, 24 * S), $"{Mathf.CeilToInt(pc.health.current)} / {pc.health.max}", sTiny, Color.white, TextAnchor.MiddleCenter);
+        var prog = Progression.I;
+        if (prog != null)
+        {
+            var xc = new Color(0.55f, 0.8f, 1f);
+            y -= 11 * S;
+            Bar(new Rect(x, y, colW, 7 * S), prog.Frac, xc, new Color(0, 0, 0, 0.6f));
+            y -= 24 * S;
+            Text(new Rect(x, y, colW, 24 * S), prog.level >= Progression.MaxLevel ? $"Уровень {prog.level} (максимум)" : $"Уровень {prog.level}   опыт {prog.xp}/{prog.XpToNext}", sTiny, xc);
+        }
 
         var sb = new System.Text.StringBuilder();
         foreach (var (pid, key) in Inventory.PotionKeys)
@@ -338,7 +358,7 @@ public class HUD : MonoBehaviour
         {
             var s = caster.PageSlot(i);
             var r = new Rect(sx + (i + 1) * (sw + gap), sy, sw, sw);
-            if (s != null) DrawSlot(r, (i + 1).ToString(), s.name, s.color, true, s.cd, s.cooldown);
+            if (s != null) DrawSlot(r, (i + 1).ToString(), s.hud, s.color, true, s.cd, s.cooldown);
             else DrawSlot(r, (i + 1).ToString(), "", Color.gray, false, 0, 1);
         }
         if (caster.Pages > 1)
@@ -364,6 +384,14 @@ public class HUD : MonoBehaviour
             Text(new Rect(0, 18 * S, W, 40 * S), t.displayName.ToUpper(), sMed, new Color(1f, 0.6f, 0.5f), TextAnchor.MiddleCenter);
             Bar(r, t.health.Frac, new Color(0.8f, 0.15f, 0.1f), new Color(0, 0, 0, 0.7f));
         }
+    }
+
+    void DrawClock()
+    {
+        if (DayNight.I == null) return;
+        var dn = DayNight.I;
+        var c = dn.IsNight ? new Color(0.7f, 0.8f, 1f) : new Color(1f, 0.92f, 0.7f);
+        Text(new Rect(16, 262, 420, 26), dn.ClockText() + "   [T] ждать", sTiny, c);
     }
 
     void DrawSlot(Rect r, string key, string name, Color color, bool learned, float cd, float maxCd, bool chargeMode = false)
@@ -473,6 +501,14 @@ public class HUD : MonoBehaviour
 
     void DrawHurt(PlayerController pc)
     {
+        float cold = Mathf.Clamp01(1f - (Time.time - Enemy.ColdTime) / 0.8f) * 0.28f;
+        if (cold > 0.001f)
+        {
+            float W0 = Screen.width, H0 = Screen.height, b0 = 110 * S;
+            var cc = new Color(0.55f, 0.75f, 1f, cold);
+            Box(new Rect(0, 0, W0, b0), cc); Box(new Rect(0, H0 - b0, W0, b0), cc);
+            Box(new Rect(0, 0, b0, H0), cc); Box(new Rect(W0 - b0, 0, b0, H0), cc);
+        }
         float a = Mathf.Clamp01(1f - (Time.time - pc.lastHurt) / 0.4f) * 0.3f;
         if (pc.health.Frac < 0.25f && !pc.health.Dead) a = Mathf.Max(a, 0.12f + 0.08f * Mathf.Sin(Time.time * 5f));
         if (a <= 0.001f) return;

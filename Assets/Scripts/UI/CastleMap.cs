@@ -13,7 +13,7 @@ public class CastleMap : MonoBehaviour
     Vector2 pan;
     GUIStyle label, small;
     Rect canvas;
-    public static readonly Rect Bounds = new Rect(-55,-30,110,180);
+    public static readonly Rect Bounds = new Rect(-55,-30,110,215);
     void Awake(){I=this;}
     public void Open()
     {
@@ -107,6 +107,10 @@ public class CastleMap : MonoBehaviour
             WorldDot("Озеро",WorldBuilder.LakeCenter,area,world);
             WorldDot("Квиддич",WorldBuilder.PitchCenter,area,world);
             WorldDot("Руины",WorldBuilder.RuinsCenter,area,world);
+            for(int i=0;i<Activities.MerlinSites.Length;i++)
+                WorldDot(Activities.I!=null&&Activities.I.merlin.Contains(i)?"Мерлин (пройдено)":"Мерлин",Activities.MerlinSites[i],area,world);
+            WorldDot("Снитч",Activities.SnitchStand,area,world);
+            WorldDot("Дементоры (ночью)",NightSpawns.DementorShore,area,world);
         }
         foreach(var l in CastleLocations.All)
         {

@@ -21,6 +21,8 @@ public static partial class WorldBuilder
         TrophyRoom();
         UpperCastle();
         MoreLocations();
+        EastUpper();
+        GrandStaircase();
     }
 
     // ---------------- ЗАПАДНОЕ КРЫЛО: библиотека + класс ЗОТИ ----------------
@@ -90,7 +92,7 @@ public static partial class WorldBuilder
         KWalls(new Vector3(14, 0, 78), Vector3.right, Vector3.back, "woow");
         KWalls(new Vector3(14, 0, 54), Vector3.right, Vector3.forward, "wwdw");
         KPillars(new Vector2(38, 30), new Vector2(38, 42), new Vector2(38, 54), new Vector2(38, 66), new Vector2(38, 78), new Vector2(26, 30), new Vector2(26, 78));
-        KRoof(new Vector3(26, 0, 54), 24, 48);
+        // Крыша теперь над вторым этажом (EastUpper).
 
         // Гостиная: камин, диван и кресла вокруг ковра.
         var fp = Prims.Group(Root, "Fireplace");
@@ -110,10 +112,11 @@ public static partial class WorldBuilder
         foreach (float x in new[] { 15.6f, 18.4f, 21.2f }) Bookcase(new Vector3(x, FloorY, 52.8f), 180);
         Kit.Place(kitRoot, "table_medium_decorated_A", new Vector3(20, FloorY, 36), 0, FS, true);
         foreach (int s in new[] { -1, 1 }) Kit.Place(kitRoot, "chair_A_wood", new Vector3(20 + s * 1.4f, FloorY, 36), s * -90, FS);
-        Kit.Place(kitRoot, "lamp_standing", new Vector3(16, FloorY, 32), 0, FS);
-        Kit.Place(kitRoot, "lamp_standing", new Vector3(36, FloorY, 32), 0, FS);
-        Kit.Place(kitRoot, "banner_patternA_red", new Vector3(23, 0.3f, 30), 0, KS);
-        Kit.Place(kitRoot, "banner_patternA_yellow", new Vector3(35, 0.3f, 30), 0, KS);
+        // Южная стена занята лестницей на второй этаж — лампы и знамёна у перегородки.
+        Kit.Place(kitRoot, "lamp_standing", new Vector3(16, FloorY, 48), 0, FS);
+        Kit.Place(kitRoot, "lamp_standing", new Vector3(36, FloorY, 50), 0, FS);
+        Kit.Place(kitRoot, "banner_patternA_red", new Vector3(23.4f, 0.3f, 54), 180, KS);
+        Kit.Place(kitRoot, "banner_patternA_yellow", new Vector3(35, 0.3f, 54), 180, KS);
         Kit.Place(kitRoot, "pictureframe_large_A", new Vector3(37.25f, 4.2f, 37), -90, 1.4f);
         Kit.Place(kitRoot, "pictureframe_medium", new Vector3(37.25f, 4.2f, 47), -90, 1.4f);
         KLight(new Vector3(24, 4.5f, 42), 16, 1.2f);

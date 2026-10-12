@@ -33,6 +33,7 @@ public class GameManager : MonoBehaviour
         cam.nearClipPlane = 0.1f;
         cam.fieldOfView = 62f;
         cam.clearFlags = CameraClearFlags.Skybox;
+        PostFX.Setup(cam);
 
         player = PlayerController.Create(WorldBuilder.Spawn);
         camRig = camGo.GetComponent<CameraRig>();
@@ -41,6 +42,9 @@ public class GameManager : MonoBehaviour
         player.cam = camRig;
 
         gameObject.AddComponent<SFX>();
+        gameObject.AddComponent<DayNight>();
+        gameObject.AddComponent<NightSpawns>();
+        gameObject.AddComponent<Activities>();
         gameObject.AddComponent<QuestManager>();
         gameObject.AddComponent<Trials>();
         gameObject.AddComponent<SideQuests>();

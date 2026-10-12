@@ -25,7 +25,7 @@ public static class ItemDB
         ["pippin"] = ("Зелья Дж. Пиппина", new[] { "wiggenweld", "rowan", "maxima", "edurus", "focus", "invis", "thunder", "felix" }),
         ["spintwitches"] = ("Спинтвитчес — всё для полётов", new[] { "comet", "nimbus", "firebolt" }),
         ["gladrags"] = ("Гладрэгс — волшебная одежда", new[] { "robe_duel", "robe_dragon", "hat_sage", "hat_dark", "gloves_seeker" }),
-        ["tomes"] = ("Свитки и фолианты", new[] { "book_expelliarmus", "book_accio", "book_diffindo", "book_glacius", "book_bombarda" }),
+        ["tomes"] = ("Свитки и фолианты", new[] { "book_expelliarmus", "book_accio", "book_diffindo", "book_glacius", "book_bombarda", "book_stupefy", "book_arresto" }),
         ["shady"] = ("Тёмный торговец", new[] { "book_imperio", "book_crucio", "book_avada" }),
     };
 
@@ -56,6 +56,8 @@ public static class ItemDB
         Book("book_diffindo", SpellType.Diffindo, "Диффиндо", "Быстрое режущее заклятие, высокий урон.", 110);
         Book("book_glacius", SpellType.Glacius, "Глациус", "Замораживает врага, он получает +50% урона.", 130);
         Book("book_bombarda", SpellType.Bombarda, "Бомбарда", "Мощный взрыв по площади.", 200);
+        Book("book_stupefy", SpellType.Stupefy, "Остолбеней", "Оглушает врага на 2,5 секунды.", 90);
+        Book("book_arresto", SpellType.Arresto, "Арресто Моментум", "Замедляет всех врагов в радиусе 9 м на 6 секунд.", 240);
         Book("book_imperio", SpellType.Imperio, "Империо", "НЕПРОСТИТЕЛЬНОЕ. Враг 15 секунд сражается за тебя.", 400, true);
         Book("book_crucio", SpellType.Crucio, "Круцио", "НЕПРОСТИТЕЛЬНОЕ. Враг корчится в муках и получает урон.", 550, true);
         Book("book_avada", SpellType.AvadaKedavra, "Авада Кедавра", "НЕПРОСТИТЕЛЬНОЕ. Мгновенная смерть (кроме Ранрока).", 900, true);

@@ -546,7 +546,7 @@ public static partial class WorldBuilder
 
     static bool Blocked(Vector3 p)
     {
-        if (p.x > -55 && p.x < 80 && p.z > -35 && p.z < 153) return true;        // замок и двор
+        if (p.x > -55 && p.x < 80 && p.z > -35 && p.z < 185) return true;        // замок и двор
         if (Mathf.Abs(p.x) < 12 && p.z > -135 && p.z < -20) return true;           // мост
         if (Mathf.Abs(p.z + 60) < 12 && p.x > -100 && p.x < 200) return true;     // река
         if ((p - PitchCenter).magnitude < 50) return true;
@@ -559,6 +559,9 @@ public static partial class WorldBuilder
         if ((p - SideQuests.CryptPos).magnitude < 20) return true;
         if ((p - QuestManager.ConvoyPos).magnitude < 25 || (p - QuestManager.RescuePos).magnitude < 25 || (p - QuestManager.RiftPos).magnitude < 30) return true;
         foreach (var r in Rings) if ((new Vector3(r.x, 0, r.z) - p).magnitude < 8) return true;
+        foreach (var m in Activities.MerlinSites) if ((m - p).magnitude < 12) return true;
+        foreach (var b in Activities.BeastSpots) if ((b.home - p).magnitude < 10) return true;
+        if ((Activities.SnitchStand - p).magnitude < 6) return true;
         return false;
     }
 
@@ -603,6 +606,7 @@ public static partial class WorldBuilder
         Camp(new Vector3(240, 0, 40), QuestManager.Step.MeetNatsai, EnemyKind.DarkWizard, EnemyKind.DarkWizard, EnemyKind.Spider);
         Camp(new Vector3(-230, 0, 60), QuestManager.Step.MeetNatsai, EnemyKind.Spider, EnemyKind.Spider, EnemyKind.Spider);
         Camp(new Vector3(110, 0, 230), QuestManager.Step.GoForest, EnemyKind.DarkWizard, EnemyKind.DarkWizard, EnemyKind.Troll);
+        Camp(new Vector3(205, 0, 135), QuestManager.Step.GoForest, EnemyKind.Goblin, EnemyKind.Goblin, EnemyKind.Goblin, EnemyKind.Goblin);
         Camp(new Vector3(-40, 0, -235), QuestManager.Step.GoForest, EnemyKind.DarkWizard, EnemyKind.DarkWizard, EnemyKind.DarkWizard, EnemyKind.Spider);
     }
 

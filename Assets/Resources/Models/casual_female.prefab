@@ -61,7 +61,7 @@ Transform:
   m_LocalScale: {x: 1, y: 0.99999994, z: 0.99999994}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4185604840236930940}
+  - {fileID: 809649301064826800}
   - {fileID: 4145641747547002609}
   - {fileID: 8298933064167258301}
   - {fileID: 5186249099314187418}
@@ -514,6 +514,40 @@ Transform:
   - {fileID: 795568527462569586}
   m_Father: {fileID: 1976419669332345963}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5503716876585783096
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 809649301064826800}
+  m_Layer: 0
+  m_Name: Body
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &809649301064826800
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5503716876585783096}
+  serializedVersion: 2
+  m_LocalRotation: {x: -3.552703e-15, y: -0.00000011920933, z: -4.9431915e-30, w: 1}
+  m_LocalPosition: {x: -0.0000215305, y: 0.009306885, z: 0.00019310653}
+  m_LocalScale: {x: 1, y: 1.0000001, z: 1.0000001}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1188073662646628807}
+  - {fileID: 3588528764469326619}
+  - {fileID: 1976419669332345963}
+  m_Father: {fileID: 8967242957714354744}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5966341830497266580
 GameObject:
   m_ObjectHideFlags: 0
@@ -608,40 +642,6 @@ Transform:
   m_Children:
   - {fileID: 8668040591808733939}
   m_Father: {fileID: 7325288701407200650}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &6309636144660820971
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4185604840236930940}
-  m_Layer: 0
-  m_Name: Body
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &4185604840236930940
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6309636144660820971}
-  serializedVersion: 2
-  m_LocalRotation: {x: -3.552703e-15, y: -0.00000011920933, z: -4.9431915e-30, w: 1}
-  m_LocalPosition: {x: -0.0000215305, y: 0.009306885, z: 0.00019310653}
-  m_LocalScale: {x: 1, y: 1.0000001, z: 1.0000001}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1188073662646628807}
-  - {fileID: 3588528764469326619}
-  - {fileID: 1976419669332345963}
-  m_Father: {fileID: 8967242957714354744}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6510422911021661725
 GameObject:
@@ -761,7 +761,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 752489467330947350}
-  m_Father: {fileID: 4185604840236930940}
+  m_Father: {fileID: 809649301064826800}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7566152995665439107
 GameObject:
@@ -793,7 +793,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7953930388105330871}
-  m_Father: {fileID: 4185604840236930940}
+  m_Father: {fileID: 809649301064826800}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7682343827891941027
 GameObject:
@@ -948,7 +948,7 @@ SkinnedMeshRenderer:
   m_Bones:
   - {fileID: 8967242957714354744}
   - {fileID: 4145641747547002609}
-  - {fileID: 4185604840236930940}
+  - {fileID: 809649301064826800}
   - {fileID: 1188073662646628807}
   - {fileID: 5821444266772917728}
   - {fileID: 1171736854117610352}
@@ -1067,7 +1067,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5821444266772917728}
-  m_Father: {fileID: 4185604840236930940}
+  m_Father: {fileID: 809649301064826800}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8338431949558298307
 GameObject:

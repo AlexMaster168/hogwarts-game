@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
@@ -26,6 +27,7 @@ public static class ProjectSetup
         MakeMat("HM_Add", "HM/Additive");
         MakeMat("HM_Fade", "HM/Fade");
         MakeMat("HM_Sky", "Skybox/Procedural");
+        MakePostRes();
 
         if (!File.Exists(ScenePath))
         {
@@ -49,6 +51,28 @@ public static class ProjectSetup
         var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (existing != null) { existing.shader = sh; EditorUtility.SetDirty(existing); return; }
         AssetDatabase.CreateAsset(new Material(sh), path);
+    }
+
+    // Ассет со ссылкой на PostProcessResources пакета: без него PostProcessLayer в рантайме не инициализировать.
+    static void MakePostRes()
+    {
+        const string path = "Assets/Resources/HM_PostRes.asset";
+        var res = AssetDatabase.FindAssets("t:PostProcessResources")
+            .Select(AssetDatabase.GUIDToAssetPath)
+            .Select(AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.PostProcessing.PostProcessResources>)
+            .FirstOrDefault(r => r != null);
+        if (res == null)
+            res = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.PostProcessing.PostProcessResources>(
+                "Packages/com.unity.postprocessing/PostProcessing/PostProcessResources.asset");
+        if (res == null) { Debug.LogError("PostProcessResources not found"); return; }
+        var holder = AssetDatabase.LoadAssetAtPath<PostResHolder>(path);
+        if (holder == null)
+        {
+            holder = ScriptableObject.CreateInstance<PostResHolder>();
+            AssetDatabase.CreateAsset(holder, path);
+        }
+        holder.resources = res;
+        EditorUtility.SetDirty(holder);
     }
 
     [MenuItem("Hogwarts/Build Windows")]

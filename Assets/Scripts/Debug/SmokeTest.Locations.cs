@@ -53,7 +53,7 @@ public partial class SmokeTest
         p.enabled=false;
         foreach(var l in CastleLocations.All)
         {
-            if(l.level!=0||l.area.yMin<110||l.name=="Северный коридор")continue;
+            if(l.level!=0||l.area.yMin<110||l.area.yMin>=146||l.name=="Северный коридор")continue;
             p.Teleport(new Vector3(0,.2f,l.spawn.z));
             yield return WalkTo(l.spawn,8);
         }
@@ -84,7 +84,11 @@ public partial class SmokeTest
             p.cc.Move(delta.normalized*Mathf.Min(delta.magnitude,3*dt)+Vector3.down*2*dt);
             yield return null;
         }
-        CheckLocation(new Vector2(destination.x-p.transform.position.x,destination.z-p.transform.position.z).magnitude<.3f,
-            "Walk blocked at "+p.transform.position+" to "+destination);
+        bool reached=new Vector2(destination.x-p.transform.position.x,destination.z-p.transform.position.z).magnitude<.3f;
+        string near="";
+        if(!reached)
+            foreach(var c in Physics.OverlapSphere(p.transform.position+Vector3.up*.9f,1.1f,~0,QueryTriggerInteraction.Ignore))
+                if(!(c is CharacterController))near+=" ["+c.name+"/"+(c.transform.parent!=null?c.transform.parent.name:"-")+" @"+c.bounds.center.ToString("0.0")+"]";
+        CheckLocation(reached,"Walk blocked at "+p.transform.position+" to "+destination+near);
     }
 }

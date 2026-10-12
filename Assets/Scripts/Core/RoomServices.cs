@@ -67,7 +67,7 @@ public class RoomServices : MonoBehaviour
     }
     public bool Study()
     {
-        var p=GameManager.I.player;var spell=p.caster.catalog.Find(s=>!s.learned&&!s.unforgivable);
+        var p=GameManager.I.player;var spell=p.caster.catalog.Find(s=>!s.learned&&!s.unforgivable&&!s.special);
         if(spell==null||p.inventory.galleons<200)return false;
         p.inventory.galleons-=200;p.caster.Learn(spell.type);return true;
     }

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum EnemyKind { DarkWizard, Duelist, Spider, Troll, Boss, Guardian }
+public enum EnemyKind { DarkWizard, Duelist, Spider, Troll, Boss, Guardian, Inferius, Dementor, Goblin }
 
 public class Enemy : MonoBehaviour, ISpellTarget
 {
@@ -24,7 +24,10 @@ public class Enemy : MonoBehaviour, ISpellTarget
     public bool Telegraphing => telegraphT > 0f;
     public bool TelegraphRed => telegraphT > 0f && (attackKind == 1 || attackKind == 4);
 
-    public float levitateT, stunT, burnT, disarmT, frozenT, crucioT, charmedT;
+    public float levitateT, stunT, burnT, disarmT, frozenT, crucioT, charmedT, slowT;
+    // Время последнего «холода» от дементора — HUD рисует иней по краям экрана.
+    public static float ColdTime = -10f;
+    float drainTick, resistHint;
     public bool Charmed => charmedT > 0f;
     public int goldDrop;
     float crucioTick, charmCd;
@@ -89,6 +92,18 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 e.aura.range = 12f;
                 e.aura.intensity = 1.5f;
                 break;
+            case EnemyKind.Inferius:
+                hp = 95; e.speed = 2.5f; h = 1.8f; r = 0.4f; aim = 1.3f; name = "Инфернал";
+                e.parts = Figures.Humanoid(e.model, new Color(0.25f, 0.27f, 0.25f), new Color(0.6f, 0.68f, 0.6f), new Color(0.2f, 0.2f, 0.18f), new Color(0.2f, 0.25f, 0.2f));
+                break;
+            case EnemyKind.Dementor:
+                hp = 260; e.speed = 4.6f; h = 2.6f; r = 0.5f; aim = 2.3f; name = "Дементор";
+                BuildDementor(e);
+                break;
+            case EnemyKind.Goblin:
+                hp = 80; e.speed = 4.4f; h = 1.3f; r = 0.35f; aim = 0.95f; name = "Гоблин Ранрока";
+                e.parts = Figures.Goblin(e.model);
+                break;
             default:
                 hp = 70; e.speed = 3.6f; h = 1.8f; r = 0.4f; aim = 1.3f; name = "Тёмный маг";
                 e.parts = Figures.Humanoid(e.model, new Color(0.06f, 0.06f, 0.07f), new Color(0.78f, 0.78f, 0.76f), new Color(0.05f, 0.05f, 0.05f),
@@ -102,6 +117,9 @@ public class Enemy : MonoBehaviour, ISpellTarget
             EnemyKind.Guardian => 360,
             EnemyKind.Boss => 1600,
             EnemyKind.Duelist => 0,
+            EnemyKind.Inferius => Random.Range(20, 41),
+            EnemyKind.Dementor => Random.Range(90, 141),
+            EnemyKind.Goblin => Random.Range(40, 71),
             _ => Random.Range(60, 105),
         };
         e.visual = kind switch
@@ -111,6 +129,9 @@ public class Enemy : MonoBehaviour, ISpellTarget
             EnemyKind.Guardian => CharacterVisual.Attach(e.model, "giant", 4.6f, null, false, new Color(0.55f, 0.65f, 0.9f)),
             EnemyKind.Boss => CharacterVisual.Attach(e.model, "goblin_male", 1.9f, e.parts, true),
             EnemyKind.Duelist => CharacterVisual.Attach(e.model, "casual_male", 1.8f, e.parts, true),
+            EnemyKind.Inferius => CharacterVisual.Attach(e.model, "worker_male", 1.8f, e.parts, false, new Color(0.55f, 0.66f, 0.58f)),
+            EnemyKind.Dementor => null,
+            EnemyKind.Goblin => CharacterVisual.Attach(e.model, "goblin_male", 1.25f, e.parts, true),
             _ => CharacterVisual.Attach(e.model, "rpg_rogue", 1.8f, e.parts, true, new Color(0.45f, 0.4f, 0.5f)),
         };
         cc.height = h;
@@ -124,8 +145,38 @@ public class Enemy : MonoBehaviour, ISpellTarget
         t.displayName = name;
         t.aimHeight = aim;
         e.attackCd = Random.Range(1f, 2.5f);
+        if (kind == EnemyKind.Inferius && e.visual != null) e.visual.anim.speed = 0.75f;
         FX.Burst(pos + Vector3.up, new Color(0.6f, 0.2f, 0.9f), 35, 5f, 0.6f, 0.6f, -0.3f);
         return e;
+    }
+
+    // Дементор из примитивов: рваная мантия, капюшон с пустотой вместо лица, серый шлейф и холодный свет.
+    static void BuildDementor(Enemy e)
+    {
+        var robe = MatLib.Fade(new Color(0.13f, 0.14f, 0.18f, 0.9f), 1.6f, 0.15f);
+        var g = Prims.Group(e.model, "Dementor");
+        Prims.Cone(g, new Vector3(0, 0.25f, 0), 0.75f, 2.4f, robe);
+        Prims.Sphere(g, new Vector3(0, 2.45f, 0), 0.7f, robe);
+        Prims.Sphere(g, new Vector3(0, 2.4f, 0.2f), 0.42f, MatLib.Solid(new Color(0.01f, 0.01f, 0.012f), 0f));
+        foreach (int s in new[] { -1, 1 })
+        {
+            Prims.Box(g, new Vector3(s * 0.55f, 1.75f, 0.25f), new Vector3(0.14f, 0.9f, 0.14f), robe, false, Quaternion.Euler(-55, 0, s * 25));
+            Prims.Box(g, new Vector3(s * 0.75f, 1.35f, 0.6f), new Vector3(0.06f, 0.35f, 0.06f), MatLib.Solid(new Color(0.45f, 0.48f, 0.5f)), false, Quaternion.Euler(-70, 0, 0));
+        }
+        for (int i = 0; i < 6; i++)
+        {
+            var d = Quaternion.Euler(0, i * 60, 0) * Vector3.forward;
+            Prims.Box(g, d * 0.55f + Vector3.up * 0.15f, new Vector3(0.25f, 0.6f, 0.04f), robe, false, Quaternion.LookRotation(d) * Quaternion.Euler(15, 0, 0));
+        }
+        FX.Loop(g, new Vector3(0, 0.3f, 0), new Color(0.35f, 0.4f, 0.5f, 0.4f), 18, 0.9f, 0.5f);
+        var lg = new GameObject("ColdLight");
+        lg.transform.SetParent(g, false);
+        lg.transform.localPosition = new Vector3(0, 1.5f, 0);
+        var l = lg.AddComponent<Light>();
+        l.type = LightType.Point;
+        l.color = new Color(0.45f, 0.6f, 1f);
+        l.range = 8f;
+        l.intensity = 2.2f;
     }
 
     Vector3 CastPos => parts != null && parts.wandTip != null
@@ -136,6 +187,13 @@ public class Enemy : MonoBehaviour, ISpellTarget
     {
         float dt = Time.deltaTime;
         if (dt <= 0f) return;
+        // Арресто Моментум: враг живёт в замедленном времени.
+        if (slowT > 0f)
+        {
+            slowT -= dt;
+            dt *= 0.35f;
+            if (visual != null && frozenT <= 0f) visual.anim.speed = slowT > 0f ? 0.35f : 1f;
+        }
         animT += dt;
         if (dying)
         {
@@ -188,6 +246,17 @@ public class Enemy : MonoBehaviour, ISpellTarget
         float dist = toP.magnitude;
         bool hidden = player.inventory != null && player.inventory.Invisible;
         if (!aggro && dist < aggroRange && !hidden) aggro = true;
+        if (kind == EnemyKind.Dementor && aggro && !Charmed && dist < 7f && !hidden && GameState.Playing && !player.health.Dead)
+        {
+            // Холод дементора вытягивает силы, щит не помогает.
+            ColdTime = Time.time;
+            drainTick -= dt;
+            if (drainTick <= 0f)
+            {
+                drainTick = 0.5f;
+                player.health.TakeDamage(2.5f * player.inventory.DefenseMult);
+            }
+        }
 
         var desired = Vector3.zero;
         bool incapacitated = lev || stunT > 0f || frozenT > 0f || crucioT > 0f;
@@ -234,6 +303,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
         {
             case EnemyKind.DarkWizard:
             case EnemyKind.Duelist:
+            case EnemyKind.Goblin:
             {
                 strafeT -= dt;
                 if (strafeT <= 0f)
@@ -249,12 +319,33 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 {
                     bool red = kind == EnemyKind.DarkWizard && Random.value < 0.25f;
                     attackKind = red ? 1 : 0;
-                    telegraphT = 0.6f;
-                    attackCd = kind == EnemyKind.Duelist ? Random.Range(1.6f, 2.6f) : Random.Range(2.4f, 4f);
+                    telegraphT = kind == EnemyKind.Goblin ? 0.45f : 0.6f;
+                    attackCd = kind == EnemyKind.Duelist ? Random.Range(1.6f, 2.6f) : kind == EnemyKind.Goblin ? Random.Range(1.6f, 2.8f) : Random.Range(2.4f, 4f);
                     ThreatSense.Warn(red, 0.6f + dist / 20f);
                 }
                 break;
             }
+            case EnemyKind.Inferius:
+                if (dist > 2.1f) desired = dirTo * speed;
+                else if (attackCd <= 0f)
+                {
+                    attackKind = 7;
+                    telegraphT = 0.7f;
+                    attackCd = 1.9f;
+                    ThreatSense.Warn(false, 0.75f);
+                }
+                break;
+            case EnemyKind.Dementor:
+                if (dist > 4.5f) desired = dirTo * speed;
+                else desired = new Vector3(dirTo.z, 0, -dirTo.x) * speed * 0.5f;
+                if (attackCd <= 0f && dist < 9f)
+                {
+                    attackKind = 8;
+                    telegraphT = 0.9f;
+                    attackCd = 3.2f;
+                    ThreatSense.Warn(true, 1f);
+                }
+                break;
             case EnemyKind.Spider:
                 if (dist > 2.4f) desired = dirTo * speed;
                 else if (attackCd <= 0f)
@@ -328,6 +419,18 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 break;
             case 5:
                 for (int i = -1; i <= 1; i++) FireBolt(false, i * 14f);
+                break;
+            case 7:
+                knock = dirTo * 5f;
+                if (dist < 2.8f) P.ReceiveMelee(16f, false, this, dirTo * 4f);
+                SFX.Play("hit", 0.35f);
+                break;
+            case 8:
+                // Поцелуй дементора: рывок, щит не держит — только перекат.
+                knock = dirTo * 16f;
+                FX.Burst(transform.position + Vector3.up * 2f, new Color(0.4f, 0.5f, 0.7f), 30, 6f, 0.6f, 0.6f);
+                SFX.Play("curse", 0.5f);
+                if (dist < 5f) P.ReceiveMelee(26f, true, this, dirTo * 6f);
                 break;
             case 6:
                 for (int i = 0; i < 6; i++)
@@ -405,13 +508,35 @@ public class Enemy : MonoBehaviour, ISpellTarget
         if (IsDead) return;
         aggro = true;
         float dmg = h.damage;
+        var src = P;
+        bool fromPlayer = src != null && h.source == src.gameObject;
+        bool crit = fromPlayer && h.type != SpellType.Ancient && h.type != SpellType.AvadaKedavra && h.type != SpellType.Imperio
+            && h.type != SpellType.Arresto && Random.value < 0.12f;
+        if (crit) dmg *= 2f;
         if (levitateT > 0f) dmg *= 1.5f;
         bool heavy = Heavy;
         var flatDir = new Vector3(h.dir.x, 0, h.dir.z).normalized;
         switch (h.type)
         {
-            case SpellType.Incendio: burnT = 3f; break;
-            case SpellType.Confringo: burnT = 2f; break;
+            case SpellType.Incendio: burnT = kind == EnemyKind.Inferius ? 5f : 3f; break;
+            case SpellType.Confringo: burnT = kind == EnemyKind.Inferius ? 4f : 2f; break;
+            case SpellType.Patronus:
+                if (kind == EnemyKind.Dementor)
+                {
+                    dmg *= 2f;
+                    Stun(2.5f);
+                    HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1.5f), "Изгнан!", PatronusSpirit.Silver);
+                }
+                else
+                {
+                    knock = flatDir * (heavy ? 4f : 14f) + Vector3.up * (heavy ? 0f : 3f);
+                    Stun(heavy ? 0.5f : 1.4f);
+                }
+                break;
+            case SpellType.Arresto:
+                slowT = heavy ? 4f : 6f;
+                telegraphT = 0f;
+                break;
             case SpellType.Levioso:
                 if (heavy) Stun(0.6f);
                 else
@@ -458,7 +583,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 telegraphT = 0f;
                 break;
             case SpellType.Imperio:
-                if (kind == EnemyKind.Boss || kind == EnemyKind.Duelist || kind == EnemyKind.Guardian)
+                if (kind == EnemyKind.Boss || kind == EnemyKind.Duelist || kind == EnemyKind.Guardian || kind == EnemyKind.Dementor)
                 {
                     Stun(1f);
                     HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1.5f), "Сопротивляется!", new Color(0.9f, 0.9f, 0.5f));
@@ -471,9 +596,30 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 break;
         }
         if (frozenT > 0f && h.type != SpellType.Glacius) dmg *= 1.5f;
-        var col = h.type == SpellType.Ancient ? new Color(0.4f, 0.85f, 1f) : levitateT > 0f ? new Color(1f, 0.95f, 0.4f) : Color.white;
-        HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1f), Mathf.RoundToInt(dmg).ToString(), col);
+        if (kind == EnemyKind.Inferius && (h.type == SpellType.Incendio || h.type == SpellType.Confringo || h.type == SpellType.Bombarda))
+            dmg *= 2f;
+        if (kind == EnemyKind.Dementor && h.type != SpellType.Patronus && h.type != SpellType.Ancient)
+        {
+            dmg *= 0.25f;
+            if (fromPlayer && Time.time > resistHint)
+            {
+                resistHint = Time.time + 4f;
+                HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1.8f), "Почти не действует — нужен Патронус", new Color(0.7f, 0.8f, 1f));
+            }
+        }
+        if (h.finisher && !IsDead)
+        {
+            knock = flatDir * (heavy ? 3f : 10f) + Vector3.up * (heavy ? 0f : 2f);
+            Stun(heavy ? 0.2f : 0.5f);
+        }
+        var col = crit ? new Color(1f, 0.6f, 0.15f) : h.type == SpellType.Ancient ? new Color(0.4f, 0.85f, 1f) : levitateT > 0f ? new Color(1f, 0.95f, 0.4f) : Color.white;
+        HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1f), (crit ? "КРИТ " : "") + Mathf.RoundToInt(dmg), col);
         health.TakeDamage(dmg);
+        if (fromPlayer)
+        {
+            if (IsDead) { HitStop.Do(0.09f); GameManager.I.camRig.Shake(0.18f); }
+            else if (crit || h.finisher || dmg >= 40f) HitStop.Do(0.045f);
+        }
         if (visual != null && !IsDead) visual.Hit();
         var p = P;
         if (p != null && h.source == p.gameObject) p.AddAncient(dmg * 0.35f);
@@ -590,7 +736,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
         to.y = 0;
         float dist = to.magnitude;
         face = to;
-        bool ranged = kind == EnemyKind.DarkWizard;
+        bool ranged = kind == EnemyKind.DarkWizard || kind == EnemyKind.Goblin;
         float range = ranged ? 14f : cc.radius + charmTarget.cc.radius + 1.8f;
         if (dist > range) desired = to.normalized * speed;
         if (charmCd > 0f || dist > range + 1f) return;
@@ -629,6 +775,12 @@ public class Enemy : MonoBehaviour, ISpellTarget
             wasTelegraph = tel;
         }
         float bob = moveMag > 0.5f ? Mathf.Abs(Mathf.Sin(animT * 8f)) * 0.06f : 0f;
+        if (kind == EnemyKind.Dementor)
+        {
+            model.localPosition = Vector3.up * (0.6f + Mathf.Sin(animT * 1.7f) * 0.25f);
+            model.localRotation = Quaternion.Euler(telegraphT > 0f ? 25f : 6f, 0, Mathf.Sin(animT * 1.3f) * 6f);
+            return;
+        }
         if (lev)
         {
             model.localPosition = Vector3.up * Mathf.Sin(animT * 3f) * 0.1f;

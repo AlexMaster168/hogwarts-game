@@ -54,6 +54,8 @@ public class PlayerController : MonoBehaviour, ISpellTarget
         pc.caster.Init(pc, pc.parts.wandTip);
         pc.inventory = go.AddComponent<Inventory>();
         pc.inventory.pc = pc;
+        var prog = go.AddComponent<Progression>();
+        prog.pc = pc;
         return pc;
     }
 
@@ -129,6 +131,7 @@ public class PlayerController : MonoBehaviour, ISpellTarget
             var door = CastleDoor.Nearby(transform.position);
             if (door != null) door.Use(this);
             else if (QuestManager.I.InteractExtension()) { }
+            else if (Activities.TryInteract(this)) { }
             else if (RoomServices.TryUse(this)) { }
             else if (nearbyNpc != null) QuestManager.I.Talk(nearbyNpc);
             else if (nearbyChest != null) nearbyChest.Open(this);

@@ -32,6 +32,11 @@ public static class CastleLocations
         new("Кабинет чар", "Парты, свечи и тренировочные предметы",new Rect(-23,128,18,18),0,new Vector3(-14,.2f,137)),
         new("Оранжерея", "Растения и столы травологии",new Rect(5,128,18,18),0,new Vector3(14,.2f,137)),
         new("Северный коридор", "Соединяет новые классы и трофейный зал",new Rect(-5,103,10,43),0,new Vector3(0,.2f,124)),
+        new("Кабинет директора", "Омут памяти, феникс и портреты директоров",new Rect(14,30,24,24),1,new Vector3(28,6.25f,40)),
+        new("Выручай-комната", "Испытание волнами врагов — пьедестал в центре",new Rect(14,54,24,24),1,new Vector3(26,6.25f,60)),
+        new("Большая лестница", "Движущиеся пролёты между галереями",new Rect(-15,148,30,30),0,new Vector3(0,.2f,151)),
+        new("Галереи лестницы", "Кольцевые галереи на 7 и 14 м",new Rect(-15,148,30,30),1,new Vector3(13,7.2f,170)),
+        new("Вершина лестницы", "Галерея на 21 м и сундук",new Rect(-15,148,30,30),2,new Vector3(-13,21.2f,170)),
     };
     public static int Floor(Vector3 p) => p.y < -2 ? -1 : p.y > 18 ? 2 : p.y > 4 ? 1 : 0;
     public static bool Contains(CastleLocation l, Vector3 p) => l.level == Floor(p) && l.area.Contains(new Vector2(p.x,p.z));
@@ -51,10 +56,15 @@ public static partial class WorldBuilder
         Prims.Box(Root,new Vector3(0,-.1f,124.5f),new Vector3(10,.3f,43),floor);
         foreach (var l in CastleLocations.All)
         {
-            if (l.level != 0 || l.area.yMin < 110 || l.name == "Северный коридор") continue;
+            // Только четыре пристройки северного крыла; Большая лестница строится отдельно.
+            if (l.level != 0 || l.area.yMin < 110 || l.area.yMin >= 146 || l.name == "Северный коридор") continue;
             AnnexRoom(l);
         }
-        Prims.Box(Root,new Vector3(0,3,146),new Vector3(10,6,.4f),stone);
+        // Дверь в конце коридора ведёт к Большой лестнице.
+        Prims.Box(Root,new Vector3(-3.25f,3,146),new Vector3(3.5f,6,.4f),stone);
+        Prims.Box(Root,new Vector3(3.25f,3,146),new Vector3(3.5f,6,.4f),stone);
+        Prims.Box(Root,new Vector3(0,5.05f,146),new Vector3(3,1.9f,.4f),stone);
+        Prims.Box(Root,new Vector3(0,-.1f,147.2f),new Vector3(4,.3f,2.6f),floor);
         Prims.Box(Root,new Vector3(0,6.2f,124.5f),new Vector3(10,.3f,43),woodDark);
         KLight(new Vector3(0,4,116),22,1.2f);
         KLight(new Vector3(0,4,136),22,1.2f);

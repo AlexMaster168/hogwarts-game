@@ -51,13 +51,13 @@ public partial class SmokeTest
         p.Teleport(new Vector3(14,.2f,119));RoomServices.TryUse(p);yield return Shot("features_brewing");GameState.Set(GameMode.Play);
         SaveGame.TestPath=System.IO.Path.Combine(Application.dataPath,"..","Verification","test-progress.json");
         p.Teleport(WorldBuilder.Spawn);inv.galleons=1234;services.herbs=9;
-        inv.equipped.Clear();p.health.max=150;
+        inv.equipped.Clear();p.health.max=Progression.BaseHp;
         CheckLocation(SaveGame.Save(),"Save write");
         inv.galleons=1;services.herbs=0;p.health.max=999;
         CheckLocation(SaveGame.Load(),"Load accepted");yield return Frames(5);
         CheckLocation(inv.galleons==1234&&services.herbs==9&&q.step==QuestManager.Step.Free&&Trials.I.AllDone,
             "Save/load round trip");
-        CheckLocation(p.health.max==150,"Unequipped HP restored");
+        CheckLocation(Mathf.Approximately(p.health.max,Progression.BaseHp),"Unequipped HP restored");
         CheckLocation(SideQuests.I.all.TrueForAll(s=>s.state==SQState.Done),"Completed quests restored");
         string valid=System.IO.File.ReadAllText(SaveGame.FilePath);
         System.IO.File.WriteAllText(SaveGame.FilePath,"{corrupted");

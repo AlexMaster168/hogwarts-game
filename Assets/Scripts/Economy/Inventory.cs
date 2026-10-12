@@ -35,7 +35,7 @@ public class Inventory : MonoBehaviour
         return s;
     }
 
-    public float DamageMult => (1f + Sum(d => d.dmgBonus)) * (maximaT > 0 ? 1.5f : 1f);
+    public float DamageMult => (1f + Sum(d => d.dmgBonus)) * (maximaT > 0 ? 1.5f : 1f) * Progression.DamageMult;
     public float DefenseMult => (1f - Mathf.Min(0.8f, Sum(d => d.defBonus))) * (edurusT > 0 ? 0.5f : 1f);
     public float CooldownMult => 1f - Mathf.Min(0.6f, Sum(d => d.cdBonus));
     public float BroomMult => 1f + Sum(d => d.broomBonus);
@@ -110,7 +110,7 @@ public class Inventory : MonoBehaviour
         if (d.kind == ItemKind.Potion || d.kind == ItemKind.Book) return;
         equipped[d.kind] = d.id;
         float frac = pc.health.Frac;
-        pc.health.max = 150f + HpBonus;
+        pc.health.max = Progression.BaseHp + HpBonus;
         pc.health.current = Mathf.Max(1f, pc.health.max * frac);
         ApplyVisuals();
     }
@@ -119,7 +119,7 @@ public class Inventory : MonoBehaviour
     {
         if (k == ItemKind.Broom) return;
         equipped.Remove(k);
-        pc.health.max = 150f + HpBonus;
+        pc.health.max = Progression.BaseHp + HpBonus;
         pc.health.current = Mathf.Min(pc.health.current, pc.health.max);
         ApplyVisuals();
     }

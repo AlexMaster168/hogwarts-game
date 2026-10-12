@@ -4,7 +4,7 @@ using UnityEngine;
 public enum SpellType
 {
     Basic, Incendio, Levioso, Depulso, Confringo, Ancient, Stupefy, EnemyBolt, EnemyCurse,
-    Expelliarmus, Accio, Diffindo, Glacius, Bombarda, Imperio, Crucio, AvadaKedavra
+    Expelliarmus, Accio, Diffindo, Glacius, Bombarda, Imperio, Crucio, AvadaKedavra, Patronus, Arresto
 }
 
 public struct SpellHit
@@ -14,7 +14,7 @@ public struct SpellHit
     public Vector3 point;
     public Vector3 dir;
     public GameObject source;
-    public bool unblockable;
+    public bool unblockable, finisher;
 }
 
 public interface ISpellTarget
@@ -28,7 +28,7 @@ public class SpellProjectile : MonoBehaviour
     public float speed, damage, radius = 0.3f, life = 4f, homing, homingHeight = 1.1f;
     public GameObject owner;
     public Transform homingTarget;
-    public bool hostile, unblockable;
+    public bool hostile, unblockable, finisher;
     Vector3 dir;
     Color color;
     bool done;
@@ -145,7 +145,7 @@ public class SpellProjectile : MonoBehaviour
 
     void Apply(ISpellTarget t, Vector3 point)
     {
-        t.OnSpellHit(new SpellHit { type = type, damage = damage, point = point, dir = dir, source = owner, unblockable = unblockable });
+        t.OnSpellHit(new SpellHit { type = type, damage = damage, point = point, dir = dir, source = owner, unblockable = unblockable, finisher = finisher });
     }
 
     // Идеальный Протего: отражаем снаряд обратно как Остолбеней.

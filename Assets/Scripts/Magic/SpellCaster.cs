@@ -4,9 +4,9 @@ using UnityEngine;
 public class SpellSlot
 {
     public SpellType type;
-    public string name;
+    public string name, hud;
     public float cooldown, cd, damage, speed, size;
-    public bool learned, unforgivable;
+    public bool learned, unforgivable, special;
     public Color color;
 }
 
@@ -30,7 +30,9 @@ public class SpellCaster : MonoBehaviour
     public static readonly Color BasicColor = new(1f, 0.85f, 0.45f);
     static readonly KeyCode[] Keys = { KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4 };
 
-    float lastCast = -10f, shieldStart, armRaise;
+    float lastCast = -10f, shieldStart, armRaise, lastBasic = -10f;
+    int combo;
+    public int Combo => Time.time - lastBasic < 1.1f ? combo : 0;
     GameObject shield;
 
     void Awake()
@@ -47,11 +49,19 @@ public class SpellCaster : MonoBehaviour
         Def(SpellType.Imperio, "Империо", 25f, 0f, 36f, 0.35f, new Color(0.85f, 0.85f, 0.4f), true);
         Def(SpellType.Crucio, "Круцио", 20f, 10f, 36f, 0.35f, new Color(0.95f, 0.1f, 0.45f), true);
         Def(SpellType.AvadaKedavra, "Авада Кедавра", 40f, 999f, 40f, 0.4f, new Color(0.2f, 1f, 0.25f), true);
+        Def(SpellType.Stupefy, "Остолбеней", 7f, 18f, 52f, 0.3f, new Color(0.35f, 0.65f, 1f));
+        Def(SpellType.Arresto, "Арресто Моментум", 14f, 6f, 0f, 0f, new Color(0.6f, 0.95f, 0.95f));
+        Def(SpellType.Patronus, "Экспекто Патронум", 18f, 70f, 0f, 0f, PatronusSpirit.Silver);
+        Slot(SpellType.Patronus).special = true;
+        Slot(SpellType.Patronus).hud = "Патронус";
+        Slot(SpellType.Arresto).hud = "Арресто";
+        Slot(SpellType.AvadaKedavra).hud = "Авада";
+        Slot(SpellType.Expelliarmus).hud = "Экспелли.";
     }
 
     void Def(SpellType t, string name, float cd, float dmg, float speed, float size, Color c, bool unforgivable = false)
     {
-        catalog.Add(new SpellSlot { type = t, name = name, cooldown = cd, damage = dmg, speed = speed, size = size, color = c, unforgivable = unforgivable });
+        catalog.Add(new SpellSlot { type = t, name = name, hud = name, cooldown = cd, damage = dmg, speed = speed, size = size, color = c, unforgivable = unforgivable });
     }
 
     public void Init(PlayerController p, Transform tip)
@@ -178,16 +188,23 @@ public class SpellCaster : MonoBehaviour
 
     float Dmg => pc.inventory != null ? pc.inventory.DamageMult : 1f;
 
+    // Комбо базовой атаки: каждый третий выстрел подряд — усиленный «финишер».
     void CastBasic()
     {
         basicCd = 0.38f;
+        combo = Time.time - lastBasic < 1.1f ? combo + 1 : 1;
+        lastBasic = Time.time;
+        bool finisher = combo % 3 == 0;
         var aim = AimPoint();
         BeginCast(aim);
         var from = wandTip.position;
-        var p = SpellProjectile.Spawn(SpellType.Basic, from, aim - from, pc.gameObject, 10f * Dmg, 48f, BasicColor, false,
-            target != null ? target.transform : null, 6f, false, 0.22f);
+        var color = finisher ? new Color(1f, 0.65f, 0.25f) : BasicColor;
+        var p = SpellProjectile.Spawn(SpellType.Basic, from, aim - from, pc.gameObject, (finisher ? 26f : 10f) * Dmg, finisher ? 56f : 48f, color, false,
+            target != null ? target.transform : null, 6f, false, finisher ? 0.4f : 0.22f);
+        p.finisher = finisher;
         if (target != null) p.homingHeight = target.aimHeight;
-        SFX.Play("cast", 0.35f);
+        SFX.Play(finisher ? "heavy" : "cast", finisher ? 0.5f : 0.35f);
+        if (finisher) FX.Flash(from, color, 3f, 6f, 0.15f);
     }
 
     public void TryCast(SpellSlot s)
@@ -201,6 +218,18 @@ public class SpellCaster : MonoBehaviour
             CastIncendio(aim, s.color);
             return;
         }
+        if (s.type == SpellType.Arresto)
+        {
+            CastArresto(aim, s);
+            return;
+        }
+        if (s.type == SpellType.Patronus)
+        {
+            PatronusSpirit.Spawn(pc.transform.position + pc.transform.forward * 1.2f, aim - pc.transform.position, s.damage * Dmg, pc.gameObject);
+            SFX.Play("ancient", 0.7f);
+            HUD.ShowToast("Экспекто Патронум!", s.color);
+            return;
+        }
         var from = wandTip.position;
         var p = SpellProjectile.Spawn(s.type, from, aim - from, pc.gameObject, s.damage * Dmg, s.speed, s.color, false,
             target != null ? target.transform : null, 6f, false, s.size);
@@ -211,6 +240,23 @@ public class SpellCaster : MonoBehaviour
             FX.Flash(from, s.color, 4f, 10f, 0.3f);
         }
         else SFX.Play(s.type == SpellType.Bombarda ? "heavy" : "cast", 0.55f);
+    }
+
+    // Арресто Моментум: замедляет всех врагов вокруг точки прицела.
+    void CastArresto(Vector3 aim, SpellSlot s)
+    {
+        int n = 0;
+        foreach (var e in Enemy.All.ToArray())
+        {
+            if (e == null || e.IsDead || e.Charmed || (e.transform.position - aim).magnitude > 9f) continue;
+            e.OnSpellHit(new SpellHit { type = SpellType.Arresto, damage = s.damage * Dmg, point = e.targetable.AimPoint, dir = Vector3.down, source = pc.gameObject });
+            n++;
+        }
+        FX.Shockwave(aim, s.color, 9f);
+        FX.Burst(aim + Vector3.up, s.color, 70, 5f, 0.35f, 1.2f, -0.1f);
+        FX.Flash(aim + Vector3.up, s.color, 4f, 14f, 0.5f);
+        SFX.Play("freeze", 0.7f);
+        if (n > 0) HUD.Float(aim + Vector3.up * 2.5f, "Замедлены: " + n, s.color);
     }
 
     void CastIncendio(Vector3 aim, Color c)

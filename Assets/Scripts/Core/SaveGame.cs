@@ -11,7 +11,11 @@ using UnityEngine;
     public int version=1,house,pages,gold,earned,defeated,herbs,seals;
     public string step;
     public Vector3 position;
-    public float health,playTime,harvestRemaining,mealRemaining;
+    public float health,playTime,harvestRemaining,mealRemaining,hour;
+    public int day,level,xp,snitchWins,snitchGames,rorRuns;
+    public float rorBest;
+    public int[] cards,merlin,beasts;
+    public bool raining;
     public bool broom,ancient,protego;
     public bool[] trials;
     public string[] spells,owned,visited;
@@ -50,6 +54,9 @@ public class SaveGame : MonoBehaviour
             potions=inv.potions.Select(x=>new SaveEntry{id=x.Key,count=x.Value}).ToArray(),
             equipped=inv.equipped.Select(x=>new SaveEntry{id=x.Value,count=(int)x.Key}).ToArray(),
             side=SideQuests.I.all.Where(x=>x.state==SQState.Done).Select(x=>new SaveEntry{id=x.id,count=x.have}).ToArray(),
+            cards=Activities.I.cards.ToArray(),merlin=Activities.I.merlin.ToArray(),beasts=Activities.I.beasts.ToArray(),
+            snitchWins=Activities.I.snitchWins,snitchGames=Activities.I.snitchGames,rorRuns=Activities.I.rorRuns,rorBest=Activities.I.rorBest,
+            level=Progression.I.level,xp=Progression.I.xp,hour=DayNight.I.hour,day=DayNight.I.day,raining=DayNight.I.raining,
             openedChests=Chest.All.Where(c=>c.opened).Select(c=>c.transform.position).ToArray(),collectedPages=FieldGuidePage.Collected.ToArray()
         };
     }
@@ -95,7 +102,8 @@ public class SaveGame : MonoBehaviour
         p.caster.learned.Clear();foreach(var s in p.caster.catalog)s.learned=false;
         foreach(var s in d.spells)if(Enum.TryParse(s,out SpellType t))p.caster.Learn(t);
         p.caster.page=0;inv.owned.Clear();foreach(var id in d.owned)if(ItemDB.Get(id)!=null)inv.owned.Add(id);
-        inv.equipped.Clear();p.health.max=150;
+        Progression.I.Restore(d.level>0?d.level:1,d.xp);
+        inv.equipped.Clear();p.health.max=Progression.BaseHp;
         foreach(var x in d.equipped??Array.Empty<SaveEntry>())if(inv.owned.Contains(x.id))inv.Equip(ItemDB.Get(x.id));
         inv.ApplyVisuals();
         inv.galleons=Mathf.Max(0,d.gold);inv.earnedTotal=d.earned;
@@ -111,6 +119,8 @@ public class SaveGame : MonoBehaviour
         foreach(var c in Chest.All)c.RestoreOpened((d.openedChests??Array.Empty<Vector3>()).Any(v=>Vector3.Distance(v,c.transform.position)<.1f));
         if(step>=QuestManager.Step.FigReveal)q.Npc("fig").transform.position=WorldBuilder.Courtyard+new Vector3(3,0,6);
         q.SetStep(step,false);q.RestoreSeals(d.seals);
+        Activities.I.Restore(d.cards,d.merlin,d.beasts,d.snitchWins,d.snitchGames,d.rorRuns,d.rorBest);
+        if(d.day>0){DayNight.I.day=d.day;DayNight.I.SetHour(d.hour);DayNight.I.raining=d.raining;}
         // Partial objectives restart at their step; completed quests never pay again.
         p.Teleport(d.position);p.health.current=Mathf.Clamp(d.health,1,p.health.max);
         if(p.onBroom)p.ToggleBroom();if(q.relic!=null)q.relic.gameObject.SetActive(step<=QuestManager.Step.TakeRelic);

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum GameMode { Title, Play, Dialogue, Paused, Dead, Victory, Shop, Inventory, Map, Service }
+public enum GameMode { Title, Play, Dialogue, Paused, Dead, Victory, Shop, Inventory, Map, Service, Journal }
 
 // Глобальный режим игры. Всё, кроме Play, ставит время на паузу.
 public static class GameState
