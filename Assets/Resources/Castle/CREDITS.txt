@@ -1,0 +1,5 @@
+Castle / interior modules (all CC0 1.0, public domain):
+- KayKit Dungeon Remastered 1.0 - Kay Lousberg (kaylousberg.com) - github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0
+- KayKit Furniture Bits 1.0 - Kay Lousberg - github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0
+- Kenney Castle Kit 2.0 (kenney/flag*, tower*) - kenney.nl/assets/castle-kit
+- Kenney Furniture Kit 1.0 (kenney/bookcase*, books, lampWall) - kenney.nl/assets/furniture-kit

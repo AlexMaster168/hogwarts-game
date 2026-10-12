@@ -1,0 +1,4 @@
+Все модели — CC0 (Quaternius, quaternius.com):
+- RPG Characters (Nov 2020) — rpg_wizard, rpg_rogue
+- Ultimate Animated Character Pack (Nov 2019) — остальные .fbx
+- poly.pizza: Spider, Giant (Quaternius, CC0) — spider.glb, giant.glb

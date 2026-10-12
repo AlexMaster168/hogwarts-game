@@ -1,0 +1,4 @@
+Все звуки — CC0 (общественное достояние).
+Kenney (kenney.nl): RPG Audio, Impact Sounds, Interface Sounds, Sci-fi Sounds, Music Jingles.
+OpenGameArt: "Medieval: The Old Tower Inn" (music_castle), "Determined Pursuit" (music_battle),
+"Cathedral in the Forest" (music_forest), "Wind Whoosh Loop" (wind).
