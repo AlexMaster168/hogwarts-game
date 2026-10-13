@@ -55,7 +55,9 @@ public partial class SmokeTest
         CheckLocation(hp0 - dem.health.current <= 20.1f, "Dementor resists ordinary spells");
         hp0 = dem.health.current;
         Aim(dem.targetable.AimPoint);
+        p.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(dem.transform.position - p.transform.position, Vector3.up));
         yield return Frames(3);
+        p.caster.target = dem.targetable;
         p.caster.DebugCast(SpellType.Patronus);
         yield return new WaitForSecondsRealtime(1.2f);
         CheckLocation(dem == null || dem.IsDead || hp0 - dem.health.current >= 100f, "Patronus damages dementor");
@@ -83,7 +85,7 @@ public partial class SmokeTest
         p.Teleport(new Vector3(15.4f, 0.25f, 32.4f));
         yield return WalkTo(new Vector3(35.4f, 6.3f, 32.4f), 20);
         CheckLocation(p.transform.position.y > 5.8f, "East wing stairs ascent");
-        yield return WalkTo(new Vector3(35.4f, 6.3f, 38f), 5);
+        yield return WalkTo(new Vector3(34.4f, 6.3f, 38f), 5);
         yield return WalkTo(new Vector3(25f, 6.3f, 40f), 6);
         yield return WalkTo(new Vector3(25f, 6.3f, 50f), 6);
         yield return WalkTo(new Vector3(29f, 6.3f, 52f), 4);
@@ -93,6 +95,7 @@ public partial class SmokeTest
 
         // ---- Большая лестница: подъём по трём пролётам ----
         foreach (var s in WorldBuilder.Stairs) s.forceConnected = true;
+        for (float t0 = Time.realtimeSinceStartup; Time.realtimeSinceStartup - t0 < 8f && !WorldBuilder.Stairs.All(s => s.Connected);) yield return null;
         yield return Frames(2);
         p.Teleport(new Vector3(0, 0.25f, 150.5f));
         yield return WalkTo(new Vector3(-1.2f, 0.25f, 163f), 8);

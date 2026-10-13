@@ -69,6 +69,7 @@ public static partial class WorldBuilder
         TrialSites();
         Crypt();
         ShadyTent();
+        DarkCamp();
         Random.state = state;
         StaticBatchingUtility.Combine(Root.gameObject);
     }
@@ -338,6 +339,7 @@ public static partial class WorldBuilder
     static void Hogsmeade()
     {
         var hg = Prims.Group(Root, "Hogsmeade");
+        VillageHouses.Clear();
         var c = HogsmeadeCenter;
         Prims.Box(hg, c + Vector3.up * 0.03f, new Vector3(92, 0.06f, 16), MatLib.Solid(new Color(0.5f, 0.47f, 0.42f), 0.1f, 0.6f, 0.6f), false);
         Color[] walls = { new(0.85f, 0.8f, 0.68f), new(0.7f, 0.6f, 0.45f), new(0.6f, 0.65f, 0.7f), new(0.65f, 0.72f, 0.6f), new(0.8f, 0.6f, 0.55f), new(0.55f, 0.45f, 0.4f) };
@@ -351,6 +353,7 @@ public static partial class WorldBuilder
                 var wm = MatLib.Solid(walls[Random.Range(0, walls.Length)], 0.1f, 0.4f, 0.4f);
                 var rm = MatLib.Solid(roofs[Random.Range(0, roofs.Length)], 0.2f, 0.4f, 0.4f);
                 Prims.Box(hg, center + Vector3.up * h * 0.5f, new Vector3(w, h, d), wm);
+                VillageHouses.Add(new Rect(x - w * 0.5f, center.z - d * 0.5f, w, d));
                 Prims.Roof(hg, center + Vector3.up * h, d + 1.2f, Random.Range(3f, 4.5f), w + 1f, rm, 90);
                 float front = c.z + side * (16 - d * 0.5f) - side * 0.05f;
                 Prims.Box(hg, new Vector3(x, 1.2f, front), new Vector3(1.4f, 2.4f, 0.2f), woodDark, false);
@@ -562,6 +565,7 @@ public static partial class WorldBuilder
         foreach (var m in Activities.MerlinSites) if ((m - p).magnitude < 12) return true;
         foreach (var b in Activities.BeastSpots) if ((b.home - p).magnitude < 10) return true;
         if ((Activities.SnitchStand - p).magnitude < 6) return true;
+        if ((DarkCampPos - p).magnitude < 18) return true;
         return false;
     }
 
@@ -599,6 +603,8 @@ public static partial class WorldBuilder
     }
 
     public static readonly Vector3 ShadyPos = new(202, 0, -181);
+    public static readonly Vector3 DarkCampPos = new(-62, 0, 228);
+    public static readonly List<Rect> VillageHouses = new();
 
     static void Camps()
     {
@@ -668,6 +674,35 @@ public static partial class WorldBuilder
         l.color = new Color(0.5f, 1f, 0.6f);
         l.range = 14;
         l.intensity = 1.5f;
+    }
+
+    // Логово тёмных магов: чёрный шатёр, зелёный костёр, менгиры с рунами.
+    static void DarkCamp()
+    {
+        var g = Prims.Group(Root, "DarkCamp");
+        var c = DarkCampPos;
+        var cloth = MatLib.Solid(new Color(0.05f, 0.07f, 0.05f), 0.1f);
+        var green = MatLib.Glow(new Color(0.25f, 1f, 0.35f), 2.5f);
+        Prims.Box(g, c + new Vector3(0, 0.03f, 0), new Vector3(18, 0.06f, 14), MatLib.Solid(new Color(0.18f, 0.16f, 0.13f), 0.05f), false);
+        Prims.Roof(g, c + new Vector3(0, 0, 4), 7f, 4f, 6f, cloth, 0);
+        Prims.Box(g, c + new Vector3(0, 0.4f, -2.5f), new Vector3(3.2f, 0.8f, 1f), woodDark);
+        Prims.Cyl(g, c + new Vector3(0, 0, -6.5f), 0.9f, 0.25f, stoneDark);
+        Prims.Sphere(g, c + new Vector3(0, 0.7f, -6.5f), 1.1f, green);
+        var l = new GameObject("DarkFire").AddComponent<Light>();
+        l.transform.SetParent(g, false);
+        l.transform.position = c + new Vector3(0, 1.6f, -6.5f);
+        l.type = LightType.Point; l.color = new Color(0.3f, 1f, 0.4f); l.range = 14; l.intensity = 2.2f;
+        for (int i = 0; i < 5; i++)
+        {
+            var d = Quaternion.Euler(0, 200 + i * 35, 0) * Vector3.forward;
+            var sp = c + d * 8.5f;
+            Prims.Box(g, sp + Vector3.up * 1.4f, new Vector3(0.9f, 2.8f, 0.6f), stoneDark, true);
+            Prims.Box(g, sp + Vector3.up * 2.2f - d * 0.32f, new Vector3(0.4f, 0.4f, 0.05f), green, false);
+        }
+        Prims.Box(g, c + new Vector3(-3.5f, 1.2f, -1.6f), new Vector3(0.1f, 2.4f, 0.1f), woodDark, false);
+        Prims.Sphere(g, c + new Vector3(-3.5f, 2.5f, -1.6f), 0.25f, green);
+        Prims.Box(g, c + new Vector3(3.5f, 1.2f, -1.6f), new Vector3(0.1f, 2.4f, 0.1f), woodDark, false);
+        Prims.Sphere(g, c + new Vector3(3.5f, 2.5f, -1.6f), 0.25f, green);
     }
 
     static void ShadyTent()

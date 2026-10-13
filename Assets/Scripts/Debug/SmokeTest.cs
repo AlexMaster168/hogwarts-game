@@ -83,6 +83,16 @@ public partial class SmokeTest : MonoBehaviour
             Application.Quit(errors == 0 ? 0 : 1);
             yield break;
         }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmPatchOnly") >= 0)
+        {
+            q.SetStep(QuestManager.Step.Free, false);
+            for (int i = 0; i < 3; i++) Trials.I.done[i] = true;
+            foreach (var task in SideQuests.I.all) { task.have = task.need; task.state = SQState.Done; }
+            yield return PatchTest();
+            foreach (var note in notes) Debug.Log("HM_SMOKE_NOTE " + note);
+            Application.Quit(errors == 0 ? 0 : 1);
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmUpgradesOnly") >= 0)
         {
             q.SetStep(QuestManager.Step.Free, false);
@@ -136,6 +146,7 @@ public partial class SmokeTest : MonoBehaviour
         int sideDone = SideQuests.I.all.FindAll(s => s.state == SQState.Done).Count;
         yield return FeaturesTest();
         yield return UpgradesTest();
+        yield return PatchTest();
 
         // Проверим экран смерти и паузы.
         GameState.Set(GameMode.Play);

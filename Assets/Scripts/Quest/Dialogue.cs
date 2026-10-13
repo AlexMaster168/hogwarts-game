@@ -16,7 +16,8 @@ public static class Dialogue
     static Action<int> onChoice;
     static int openedFrame;
 
-    public static Line Current { get; private set; }
+    static Line cur;
+    public static Line Current => new Line(cur.who, Gender.Fix(cur.text));
     public static string[] Choices { get; private set; }
     public static bool Active => GameState.Mode == GameMode.Dialogue;
 
@@ -35,7 +36,7 @@ public static class Dialogue
         onDone = done;
         Choices = null;
         openedFrame = Time.frameCount;
-        Current = lines.Count > 0 ? lines.Dequeue() : new Line("", "");
+        cur = lines.Count > 0 ? lines.Dequeue() : new Line("", "");
         GameState.Set(GameMode.Dialogue);
     }
 
@@ -46,7 +47,7 @@ public static class Dialogue
         onChoice = cb;
         Choices = options;
         openedFrame = Time.frameCount;
-        Current = new Line(who, prompt);
+        cur = new Line(who, prompt);
         GameState.Set(GameMode.Dialogue);
     }
 
@@ -56,7 +57,7 @@ public static class Dialogue
         SFX.Play("click", 0.4f);
         if (lines.Count > 0)
         {
-            Current = lines.Dequeue();
+            cur = lines.Dequeue();
             return;
         }
         GameState.Set(GameMode.Play);

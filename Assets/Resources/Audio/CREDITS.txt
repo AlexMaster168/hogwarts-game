@@ -2,3 +2,5 @@
 Kenney (kenney.nl): RPG Audio, Impact Sounds, Interface Sounds, Sci-fi Sounds, Music Jingles.
 OpenGameArt: "Medieval: The Old Tower Inn" (music_castle), "Determined Pursuit" (music_battle),
 "Cathedral in the Forest" (music_forest), "Wind Whoosh Loop" (wind).
+
+Исключение: голоса заклинаний voice_m_*.wav и voice_f_*.wav не CC0. Они синтезированы голосами Windows (Microsoft Pavel / Microsoft Irina, ru-RU), обрезаны и обработаны лёгким эхом. Для публичного релиза их стоит заменить на записанный голос.

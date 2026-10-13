@@ -16,7 +16,7 @@ using UnityEngine;
     public float rorBest;
     public int[] cards,merlin,beasts;
     public bool raining;
-    public bool broom,ancient,protego;
+    public bool broom,ancient,protego,female;
     public bool[] trials;
     public string[] spells,owned,visited;
     public Vector3[] openedChests;
@@ -49,7 +49,7 @@ public class SaveGame : MonoBehaviour
             step=q.step.ToString(),house=q.house,pages=q.pages,gold=inv.galleons,earned=inv.earnedTotal,defeated=q.enemiesDefeated,
             herbs=RoomServices.I.herbs,seals=q.seals,position=p.transform.position,health=p.health.current,playTime=q.playTime,
             harvestRemaining=Mathf.Max(0,RoomServices.I.harvestReady-Time.time),mealRemaining=Mathf.Max(0,RoomServices.I.mealReady-Time.time),
-            broom=p.hasBroom,ancient=p.ancientUnlocked,protego=p.caster.protegoLearned,trials=Trials.I.done.ToArray(),
+            broom=p.hasBroom,female=p.female,ancient=p.ancientUnlocked,protego=p.caster.protegoLearned,trials=Trials.I.done.ToArray(),
             spells=p.caster.learned.Select(s=>s.type.ToString()).ToArray(),owned=inv.owned.ToArray(),visited=RoomServices.I.visited.ToArray(),
             potions=inv.potions.Select(x=>new SaveEntry{id=x.Key,count=x.Value}).ToArray(),
             equipped=inv.equipped.Select(x=>new SaveEntry{id=x.Value,count=(int)x.Key}).ToArray(),
@@ -98,6 +98,7 @@ public class SaveGame : MonoBehaviour
         yield return null;
         var p=GameManager.I.player;var inv=p.inventory;var q=QuestManager.I;
         q.house=d.house;if(d.house>=0)p.SetHouse(d.house);q.pages=d.pages;q.enemiesDefeated=d.defeated;q.playTime=d.playTime;
+        p.SetGender(d.female);
         p.hasBroom=d.broom;p.ancientUnlocked=d.ancient;p.caster.protegoLearned=d.protego;
         p.caster.learned.Clear();foreach(var s in p.caster.catalog)s.learned=false;
         foreach(var s in d.spells)if(Enum.TryParse(s,out SpellType t))p.caster.Learn(t);

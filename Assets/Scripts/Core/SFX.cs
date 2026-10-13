@@ -30,6 +30,30 @@ public class SFX : MonoBehaviour
         if (I.synth.TryGetValue(name, out var c)) I.src.PlayOneShot(c, vol);
     }
 
+    // Произнесение заклинания голосом героя: Resources/Audio/voice_m_<Spell> или voice_f_<Spell>.
+    // Отдельный источник, чтобы новая фраза обрывала предыдущую, а не накладывалась.
+    public static void Voice(string spell, float vol = 0.9f)
+    {
+        if (I == null) return;
+        var arr = I.Files((Gender.Female ? "voice_f_" : "voice_m_") + spell);
+        if (arr.Length == 0) return;
+        if (I.voiceSrc == null)
+        {
+            I.voiceSrc = I.gameObject.AddComponent<AudioSource>();
+            I.voiceSrc.playOnAwake = false;
+            I.voiceSrc.spatialBlend = 0f;
+        }
+        I.voiceSrc.Stop();
+        I.voiceSrc.clip = arr[0];
+        I.voiceSrc.volume = vol;
+        I.voiceSrc.pitch = 1f;
+        I.voiceSrc.Play();
+        LastVoice = arr[0].name;
+    }
+
+    public static string LastVoice;
+    AudioSource voiceSrc;
+
     AudioClip[] Files(string name)
     {
         if (files.TryGetValue(name, out var arr)) return arr;

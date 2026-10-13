@@ -8,6 +8,12 @@ public class CharacterVisual : MonoBehaviour
     public Transform hand, head;
     float hitCd;
 
+    // Посадка на метлу: после аниматора разводим бёдра вперёд-в стороны, голени свисают, древко встаёт между ног.
+    public bool riding;
+    public Transform broom;
+    Transform[] thigh, shin, shinEnd, foot;
+    bool legsReady;
+
     static readonly int SpeedId = Animator.StringToHash("Speed");
     static readonly int AttackId = Animator.StringToHash("Attack");
     static readonly int HitId = Animator.StringToHash("Hit");
@@ -116,6 +122,61 @@ public class CharacterVisual : MonoBehaviour
     void Update()
     {
         if (hitCd > 0) hitCd -= Time.deltaTime;
+    }
+
+    void FindLegs()
+    {
+        legsReady = true;
+        thigh = new Transform[2]; shin = new Transform[2]; shinEnd = new Transform[2]; foot = new Transform[2];
+        string[] side = { "L", "R" };
+        for (int i = 0; i < 2; i++)
+        {
+            thigh[i] = FindDeep(transform, "UpperLeg." + side[i]);
+            shin[i] = FindDeep(transform, "LowerLeg." + side[i]);
+            shinEnd[i] = FindDeep(transform, "LowerLeg." + side[i] + "_end");
+            foot[i] = FindDeep(transform, "Foot." + side[i]);
+        }
+    }
+
+    // Поворачивает кость так, чтобы направление от неё к tip совпало с dir (в мировых координатах).
+    static void Aim(Transform bone, Transform tip, Vector3 dir)
+    {
+        if (bone == null || tip == null) return;
+        var cur = tip.position - bone.position;
+        if (cur.sqrMagnitude < 1e-6f) return;
+        bone.rotation = Quaternion.FromToRotation(cur, dir) * bone.rotation;
+    }
+
+    public Vector3? Seat
+    {
+        get
+        {
+            if (!legsReady) FindLegs();
+            if (thigh[0] == null || thigh[1] == null) return null;
+            return (thigh[0].position + thigh[1].position) * 0.5f;
+        }
+    }
+
+    void LateUpdate()
+    {
+        if (!riding) return;
+        if (!legsReady) FindLegs();
+        var root = transform.parent != null ? transform.parent : transform;
+        Vector3 f = root.forward, u = root.up, r = root.right;
+        for (int i = 0; i < 2; i++)
+        {
+            float s = i == 0 ? -1f : 1f;
+            Aim(thigh[i], shin[i], f * 0.8f - u * 0.42f + r * s * 0.32f);
+            Aim(shin[i], shinEnd[i], -u * 0.92f - f * 0.3f + r * s * 0.08f);
+            // Стопы у этой модели — отдельные IK-кости под корнем: подтягиваем их к концу голени.
+            if (foot[i] != null && shinEnd[i] != null)
+            {
+                foot[i].position = shinEnd[i].position;
+            }
+        }
+        var seat = Seat;
+        if (broom != null && seat.HasValue)
+            broom.position = seat.Value - broom.up * 0.86f;
     }
 
     public void SetSpeed(float s) { if (anim != null) anim.SetFloat(SpeedId, s, 0.1f, Time.deltaTime); }

@@ -22,7 +22,24 @@ public class SideQuests : MonoBehaviour
 {
     public static SideQuests I;
     public readonly List<SideQuest> all = new();
+    // Отслеживаемое поручение; null — отслеживается сюжет. Новые поручения фокус не перехватывают.
     public SideQuest tracked;
+    public List<SideQuest> Open => all.FindAll(q => q.state == SQState.Active || q.state == SQState.Ready);
+
+    public void Focus(SideQuest q)
+    {
+        tracked = q != null && (q.state == SQState.Active || q.state == SQState.Ready) ? q : null;
+        SFX.Play("book", 0.4f);
+        HUD.ShowToast("Отслеживается: " + (tracked != null ? tracked.title : QuestManager.I.title), tracked != null ? new Color(0.5f, 0.8f, 1f) : new Color(1f, 0.83f, 0.45f));
+    }
+
+    // Z: сюжет → поручение 1 → поручение 2 → … → снова сюжет.
+    public void CycleFocus()
+    {
+        var open = Open;
+        int i = tracked == null ? -1 : open.IndexOf(tracked);
+        Focus(i + 1 < open.Count ? open[i + 1] : null);
+    }
 
     public static readonly Vector3 CryptPos = new(-45, 0, 150);
 
@@ -155,9 +172,8 @@ public class SideQuests : MonoBehaviour
     void Accept(SideQuest q)
     {
         q.state = SQState.Active;
-        tracked = q;
         SFX.Play("quest", 0.5f);
-        HUD.ShowToast("Поручение: " + q.title, new Color(0.5f, 0.85f, 1f));
+        HUD.ShowToast("Поручение: " + q.title + "  ·  [Z] — отслеживать", new Color(0.5f, 0.85f, 1f));
         switch (q.id)
         {
             case "sharp_herbs":
@@ -208,7 +224,7 @@ public class SideQuests : MonoBehaviour
         }
         SFX.Play("victory", 0.7f);
         HUD.ShowToast($"Поручение выполнено: {q.title}! Награда: {string.Join(", ", rewards)}", new Color(0.5f, 1f, 0.6f));
-        if (tracked == q) tracked = all.Find(x => x.state == SQState.Active || x.state == SQState.Ready);
+        if (tracked == q) tracked = null;
     }
 
     void Progress(SideQuest q, int add)
@@ -254,6 +270,8 @@ public class SideQuests : MonoBehaviour
     {
         var qm = QuestManager.I;
         if (qm == null || !GameState.Playing) return;
+        if (Input.GetKeyDown(KeyCode.Z)) CycleFocus();
+        if (tracked != null && tracked.state != SQState.Active && tracked.state != SQState.Ready) tracked = null;
         foreach (var q in all)
             if (q.state == SQState.Locked && qm.step >= q.unlockAt)
                 q.state = SQState.Available;
@@ -327,8 +345,44 @@ public class SideQuests : MonoBehaviour
                 return best;
             case "kogawa_race": return raceIdx < race.Count && race[raceIdx] != null ? race[raceIdx].transform.position : null;
             case "seb_crypt": return CryptPos;
+            case "hecat_duel": return Nearest(EnemyKind.DarkWizard) ?? WorldBuilder.ForestCenter;
+            case "garlick_spiders": return Nearest(EnemyKind.Spider) ?? WorldBuilder.ForestCenter;
+            case "ronen_pages":
+            {
+                Vector3? bp = null; float bd2 = float.MaxValue;
+                foreach (var pg in FieldGuidePage.All)
+                {
+                    if (pg == null) continue;
+                    float d = (pg.transform.position - P.transform.position).sqrMagnitude;
+                    if (d < bd2) { bd2 = d; bp = pg.transform.position; }
+                }
+                return bp;
+            }
+            case "fig_chests":
+            {
+                Vector3? bc = null; float bd3 = float.MaxValue;
+                foreach (var c in Chest.All)
+                {
+                    if (c == null || c.opened) continue;
+                    float d = (c.transform.position - P.transform.position).sqrMagnitude;
+                    if (d < bd3) { bd3 = d; bc = c.transform.position; }
+                }
+                return bc;
+            }
         }
         return null;
+    }
+
+    static Vector3? Nearest(EnemyKind k)
+    {
+        Vector3? best = null; float bd = float.MaxValue;
+        foreach (var e in Enemy.All)
+        {
+            if (e == null || e.IsDead || e.Charmed || e.kind != k) continue;
+            float d = (e.transform.position - P.transform.position).sqrMagnitude;
+            if (d < bd) { bd = d; best = e.transform.position; }
+        }
+        return best;
     }
 
     public string RaceTimer() => raceRunning && race.Count > 0 ? $"Гонка: {raceTime:0.0} / 60 с" : null;

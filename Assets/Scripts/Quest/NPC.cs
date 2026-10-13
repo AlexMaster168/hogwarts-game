@@ -12,7 +12,7 @@ public class NPC : MonoBehaviour
     public FigureParts parts;
     Transform model;
     float t;
-    Vector3 home;
+    public Vector3 home;
     Vector3 wanderTarget;
     float wanderWait;
     public bool wanders;
@@ -42,9 +42,9 @@ public class NPC : MonoBehaviour
         l.intensity = 2f;
     }
 
-    public NPC UseModel(string role, float height = 1.8f)
+    public NPC UseModel(string role, float height = 1.8f, Color? tint = null)
     {
-        visual = CharacterVisual.Attach(model, role, height, parts, parts != null);
+        visual = CharacterVisual.Attach(model, role, height, parts, parts != null, tint);
         return this;
     }
 

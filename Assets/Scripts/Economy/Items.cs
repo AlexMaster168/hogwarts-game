@@ -27,6 +27,8 @@ public static class ItemDB
         ["gladrags"] = ("Гладрэгс — волшебная одежда", new[] { "robe_duel", "robe_dragon", "hat_sage", "hat_dark", "gloves_seeker" }),
         ["tomes"] = ("Свитки и фолианты", new[] { "book_expelliarmus", "book_accio", "book_diffindo", "book_glacius", "book_bombarda", "book_stupefy", "book_arresto" }),
         ["shady"] = ("Тёмный торговец", new[] { "book_imperio", "book_crucio", "book_avada" }),
+        ["darkcamp"] = ("Логово тёмных магов — скупщик проклятий", new[] { "book_imperio", "book_crucio", "book_avada" }),
+        ["darkgear"] = ("Логово тёмных магов — тёмные артефакты", new[] { "robe_necro", "gloves_curse", "hat_dark", "maxima", "invis" }),
     };
 
     static ItemDB()
@@ -49,6 +51,8 @@ public static class ItemDB
         Add(new ItemDef { id = "robe_dragon", name = "Мантия из драконьей кожи", desc = "-30% входящего урона.", kind = ItemKind.Robe, price = 220, defBonus = 0.3f, color = new Color(0.15f, 0.25f, 0.15f) });
         Add(new ItemDef { id = "hat_sage", name = "Шляпа мудреца", desc = "+40 к максимальному здоровью.", kind = ItemKind.Hat, price = 90, hpBonus = 40, color = new Color(0.25f, 0.2f, 0.45f) });
         Add(new ItemDef { id = "hat_dark", name = "Шляпа тёмного мага", desc = "+10% к урону, +20 здоровья.", kind = ItemKind.Hat, price = 150, dmgBonus = 0.1f, hpBonus = 20, color = new Color(0.07f, 0.07f, 0.08f) });
+        Add(new ItemDef { id = "robe_necro", name = "Мантия отступника", desc = "+35% к урону заклинаний. Пахнет пеплом и чужими тайнами.", kind = ItemKind.Robe, price = 420, dmgBonus = 0.35f, color = new Color(0.12f, 0.2f, 0.12f) });
+        Add(new ItemDef { id = "gloves_curse", name = "Перчатки проклятого", desc = "-30% к перезарядке, +10% к урону.", kind = ItemKind.Gloves, price = 380, cdBonus = 0.3f, dmgBonus = 0.1f, color = new Color(0.15f, 0.1f, 0.12f) });
         Add(new ItemDef { id = "gloves_seeker", name = "Перчатки ловца", desc = "-20% к перезарядке заклинаний.", kind = ItemKind.Gloves, price = 160, cdBonus = 0.2f, color = new Color(0.5f, 0.35f, 0.2f) });
 
         Book("book_expelliarmus", SpellType.Expelliarmus, "Экспеллиармус", "Обезоруживает магов на 5 секунд.", 80);

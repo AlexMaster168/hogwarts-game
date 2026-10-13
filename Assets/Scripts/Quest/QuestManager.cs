@@ -106,6 +106,9 @@ public partial class QuestManager : MonoBehaviour
         Shop("spintwitches", "Продавец Спинтвитчес", WorldBuilder.HogsmeadeCenter + new Vector3(13, 0, 6), new Color(0.2f, 0.3f, 0.55f), "Новая Молния! Быстрее ветра!");
         Shop("gladrags", "Хозяйка Гладрэгс", WorldBuilder.HogsmeadeCenter + new Vector3(22, 0, -7), new Color(0.55f, 0.2f, 0.45f), "Мантии по последней моде!");
         Shop("shady", "Тёмный торговец", WorldBuilder.ShadyPos + new Vector3(0, 0, 1.5f), new Color(0.05f, 0.06f, 0.05f), "Тс-с... Не здесь.");
+        // Логово тёмных магов к северу от замка: те же непростительные + тёмная экипировка.
+        Shop("darkcamp", "Скупщик проклятий Морвен", WorldBuilder.DarkCampPos + new Vector3(-3.5f, 0, -2.5f), new Color(0.05f, 0.08f, 0.05f), "Пришёл за силой? Плати.");
+        Shop("darkgear", "Тёмная колдунья Изольда", WorldBuilder.DarkCampPos + new Vector3(3.5f, 0, -2.5f), new Color(0.12f, 0.05f, 0.1f), "Эти вещи помнят своих хозяев.");
 
         string[] villageLines = { "Добро пожаловать в Хогсмид!", "Тёмные маги совсем распоясались...", "Лучшие перья — у «Писаря»." };
         for (int i = 0; i < 3; i++)
@@ -121,11 +124,11 @@ public partial class QuestManager : MonoBehaviour
 
     static readonly Dictionary<string, string> Roles = new()
     {
-        ["fig"] = "oldclassy_male", ["hecat"] = "witch", ["sebastian"] = "casual_male", ["kogawa"] = "casual2_female",
+        ["fig"] = "oldclassy_male", ["hecat"] = "oldclassy_female", ["sebastian"] = "casual_male", ["kogawa"] = "casual2_female",
         ["natsai"] = "casual_female", ["student0"] = "casual2_male", ["student1"] = "casual3_female", ["student2"] = "casual_male",
         ["student3"] = "casual2_female", ["villager0"] = "worker_male", ["villager1"] = "chef_male", ["villager2"] = "worker_female",
         ["pippin"] = "doctor_male_old", ["tomes"] = "oldclassy_female", ["spintwitches"] = "casual2_male", ["gladrags"] = "suit_female",
-        ["shady"] = "ninja_male", ["sharp"] = "doctor_male_young", ["ronen"] = "suit_male", ["garlick"] = "kimono_female",
+        ["shady"] = "ninja_male", ["darkcamp"] = "rpg_rogue", ["darkgear"] = "witch", ["sharp"] = "doctor_male_young", ["ronen"] = "suit_male", ["garlick"] = "kimono_female",
         ["keeper_rackham"] = "oldclassy_male", ["keeper_bakar"] = "kimono_male", ["keeper_niamh"] = "witch",
         ["pupil0"] = "casual3_female", ["pupil1"] = "casual2_male", ["pupil2"] = "casual_female", ["pupil3"] = "casual_male",
     };
@@ -134,7 +137,8 @@ public partial class QuestManager : MonoBehaviour
     {
         foreach (var kv in npcs)
         {
-            if (Roles.TryGetValue(kv.Key, out var role)) kv.Value.UseModel(role);
+            if (Roles.TryGetValue(kv.Key, out var role))
+                kv.Value.UseModel(role, 1.8f, kv.Key == "darkcamp" ? new Color(0.35f, 0.5f, 0.35f) : kv.Key == "darkgear" ? new Color(0.45f, 0.3f, 0.45f) : null);
             if (kv.Key.StartsWith("keeper_")) kv.Value.MakeGhost(Trials.Colors[System.Array.IndexOf(Trials.Ids, kv.Key.Substring(7))]);
         }
     }
@@ -432,7 +436,7 @@ public partial class QuestManager : MonoBehaviour
         if (npc.id != talkTarget && SideQuests.I.TryTalk(npc)) return;
         if (npc.id != talkTarget && npc.shopId != null)
         {
-            if (npc.shopId == "shady" && !shadyWarned)
+            if ((npc.shopId == "shady" || npc.shopId.StartsWith("dark")) && !shadyWarned)
             {
                 shadyWarned = true;
                 Dialogue.Show(() => ShopUI.Open(npc.shopId),

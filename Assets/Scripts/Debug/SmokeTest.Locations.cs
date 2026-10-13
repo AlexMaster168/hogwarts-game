@@ -6,6 +6,7 @@ public partial class SmokeTest
     void CheckLocation(bool valid,string message)
     {
         if(valid)return;
+        message+=$" [mode={GameState.Mode} ts={Time.timeScale:0.00} hp={(p!=null?p.health.current:0):0}]";
         errors++; notes.Add("LOCATION_FAIL: "+message); Debug.LogWarning("LOCATION_FAIL: "+message);
     }
     IEnumerator LocationsTest()

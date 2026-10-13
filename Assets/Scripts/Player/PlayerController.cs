@@ -49,7 +49,7 @@ public class PlayerController : MonoBehaviour, ISpellTarget
         pc.robeMat = MatLib.Solid(new Color(0.08f, 0.08f, 0.1f), 0.15f);
         pc.broom = Figures.Broom(pc.model);
         pc.broom.SetActive(false);
-        pc.visual = CharacterVisual.Attach(pc.model, "rpg_wizard", 1.75f, pc.parts, true);
+        pc.SetGender(Gender.Female, true);
         pc.caster = go.AddComponent<SpellCaster>();
         pc.caster.Init(pc, pc.parts.wandTip);
         pc.inventory = go.AddComponent<Inventory>();
@@ -64,6 +64,31 @@ public class PlayerController : MonoBehaviour, ISpellTarget
         var m = MatLib.Solid(Houses.Main[h], 0.2f);
         parts.scarf.sharedMaterial = m;
         parts.trim.sharedMaterial = m;
+    }
+
+    public bool female;
+
+    // Мальчик — модель волшебника, девочка — ведьмы. Шарф и кончик палочки переезжают на новую модель.
+    public void SetGender(bool f, bool force = false)
+    {
+        if (!force && f == female && visual != null) return;
+        female = f;
+        Gender.Female = f;
+        if (visual != null)
+        {
+            parts.scarf.transform.SetParent(model, true);
+            parts.wandTip.SetParent(model, true);
+            DestroyImmediate(visual.gameObject);
+        }
+        var rot = model.localRotation;
+        var pos = model.localPosition;
+        model.localRotation = Quaternion.identity;
+        model.localPosition = Vector3.zero;
+        visual = CharacterVisual.Attach(model, f ? "witch" : "rpg_wizard", f ? 1.7f : 1.75f, parts, true);
+        model.localRotation = rot;
+        model.localPosition = pos;
+        if (visual != null) visual.broom = broom.transform;
+        if (inventory != null) inventory.ApplyVisuals();
     }
 
     public void SetRobeColor(Color c)
@@ -234,6 +259,7 @@ public class PlayerController : MonoBehaviour, ISpellTarget
         animT += dt;
         float hs = new Vector3(velocity.x, 0, velocity.z).magnitude;
         if (visual != null) visual.SetSpeed(onBroom || !cc.isGrounded ? 0f : hs);
+        if (visual != null) visual.riding = onBroom;
         if (onBroom)
         {
             var local = transform.InverseTransformDirection(velocity);

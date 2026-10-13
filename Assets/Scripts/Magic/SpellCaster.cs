@@ -30,6 +30,7 @@ public class SpellCaster : MonoBehaviour
     public static readonly Color BasicColor = new(1f, 0.85f, 0.45f);
     static readonly KeyCode[] Keys = { KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4 };
 
+    float lastProtegoVoice = -10f;
     float lastCast = -10f, shieldStart, armRaise, lastBasic = -10f;
     int combo;
     public int Combo => Time.time - lastBasic < 1.1f ? combo : 0;
@@ -119,6 +120,7 @@ public class SpellCaster : MonoBehaviour
         {
             shieldStart = Time.time;
             SFX.Play("shield", 0.5f);
+            if (Time.time - lastProtegoVoice > 3f) { lastProtegoVoice = Time.time; SFX.Voice("Protego"); }
         }
         ShieldActive = wantShield;
         shield.SetActive(ShieldActive);
@@ -213,6 +215,7 @@ public class SpellCaster : MonoBehaviour
         s.cd = pc.inventory != null && pc.inventory.Focused ? 0.25f : s.cooldown * (pc.inventory != null ? pc.inventory.CooldownMult : 1f);
         var aim = AimPoint();
         BeginCast(aim);
+        SFX.Voice(s.type.ToString());
         if (s.type == SpellType.Incendio)
         {
             CastIncendio(aim, s.color);

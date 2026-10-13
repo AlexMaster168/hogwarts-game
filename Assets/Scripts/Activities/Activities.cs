@@ -310,10 +310,32 @@ public class Activities : MonoBehaviour
         sb.AppendLine();
         sb.AppendLine($"Сюжет: {q.title}  ·  страниц путеводителя {q.pages}/{QuestManager.TotalPages}  ·  повержено врагов {q.enemiesDefeated}");
         var text = sb.ToString();
-        var inner = new Rect(0, 0, r.width - 30, sText.CalcHeight(new GUIContent(text), r.width - 30) + 20);
+        // Задания: сюжет и открытые поручения, кнопка «Следить» переключает маркер и панель.
+        var sq = SideQuests.I;
+        var open = sq != null ? sq.Open : new List<SideQuest>();
+        float qh = 44 + (1 + open.Count) * 42 + 16;
+        float th = sText.CalcHeight(new GUIContent(text), r.width - 30) + 20;
+        var inner = new Rect(0, 0, r.width - 30, qh + th);
         journalScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 52, r.width, r.height - 60), journalScroll, inner);
-        GUI.Label(inner, text, sText);
+        GUI.Label(new Rect(0, 0, inner.width, 36), "ЗАДАНИЯ  ·  [Z] — переключить без журнала", sText);
+        float y = 40;
+        QuestRow(ref y, inner.width, "СЮЖЕТ: " + q.title + " — " + q.objective, sq == null || sq.tracked == null, () => sq?.Focus(null));
+        foreach (var s in open)
+        {
+            var cur = s;
+            QuestRow(ref y, inner.width, s.title + " — " + s.desc + "  " + s.Progress, sq.tracked == s, () => sq.Focus(cur));
+        }
+        GUI.Label(new Rect(0, qh, inner.width, th), text, sText);
         GUI.EndScrollView();
+    }
+
+    void QuestRow(ref float y, float w, string label, bool on, System.Action pick)
+    {
+        GUI.color = on ? new Color(1f, 0.83f, 0.45f) : Color.white;
+        if (GUI.Button(new Rect(0, y, 150, 36), on ? "Отслеживается" : "Следить") && !on) pick();
+        GUI.color = Color.white;
+        GUI.Label(new Rect(165, y + 6, w - 170, 34), label, sText);
+        y += 42;
     }
 
     // ---------------- сохранение ----------------

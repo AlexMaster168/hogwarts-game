@@ -17,7 +17,7 @@ public class HUD : MonoBehaviour
     public const string Controls =
         "WASD — движение    Shift — бег    Пробел — прыжок    Ctrl — перекат\n" +
         "ЛКМ — базовое заклинание    1–4 — заклинания    Tab — сменить набор    Q — Протего\n" +
-        "F — Древняя магия    H/J/K — зелья    E — взаимодействие    I — инвентарь    V — карта    F5/F9 — сохранить/загрузить    B — метла    T — промотать время    O — журнал    Esc — пауза";
+        "F — Древняя магия    H/J/K — зелья    E — взаимодействие    I — инвентарь    V — карта    F5/F9 — сохранить/загрузить    B — метла    T — промотать время    O — журнал    Z — сменить задание    Esc — пауза";
 
     Texture2D white, fadeLeft;
     GUIStyle sSmall, sMed, sBig, sHuge, sTiny, sMicro;
@@ -32,7 +32,7 @@ public class HUD : MonoBehaviour
 
     public static void ShowToast(string text, Color? c = null)
     {
-        toasts.Add(new Toast { text = text, color = c ?? Color.white, t = Time.unscaledTime });
+        toasts.Add(new Toast { text = Gender.Fix(text), color = c ?? Color.white, t = Time.unscaledTime });
         if (toasts.Count > 4) toasts.RemoveAt(0);
     }
 
@@ -54,9 +54,12 @@ public class HUD : MonoBehaviour
     void Update()
     {
         bool enter = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
+        if (previewCam != null && GameState.Mode != GameMode.Title) { previewCam.enabled = false; previewLight.enabled = false; }
         switch (GameState.Mode)
         {
             case GameMode.Title:
+                if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) PickGender(false);
+                if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) PickGender(true);
                 if (enter || Input.GetKeyDown(KeyCode.Space)) StartGame();
                 break;
             case GameMode.Play:
@@ -85,6 +88,55 @@ public class HUD : MonoBehaviour
                 }
                 break;
         }
+    }
+
+    const int HeroLayer = 30;
+    Camera previewCam;
+    Light previewLight;
+    RenderTexture previewRT;
+
+    // Живое превью героя справа на титульном экране (отдельная камера в текстуру).
+    void DrawHeroPreview(Rect r)
+    {
+        var p = GameManager.I.player;
+        if (previewCam == null)
+        {
+            previewRT = new RenderTexture(420, 620, 24) { antiAliasing = 4 };
+            previewCam = new GameObject("HeroPreviewCam").AddComponent<Camera>();
+            previewCam.targetTexture = previewRT;
+            previewCam.fieldOfView = 30f;
+            previewCam.nearClipPlane = 0.1f;
+            previewCam.farClipPlane = 50f;
+            // Студийный фон: камера видит только слой героя.
+            previewCam.cullingMask = 1 << HeroLayer;
+            previewCam.clearFlags = CameraClearFlags.SolidColor;
+            previewCam.backgroundColor = new Color(0.07f, 0.08f, 0.14f);
+            // Студийный свет только для слоя героя.
+            previewLight = new GameObject("HeroPreviewLight").AddComponent<Light>();
+            var key = previewLight;
+            key.transform.SetParent(previewCam.transform, false);
+            key.transform.localPosition = new Vector3(-1.2f, 1.2f, 0.5f);
+            key.type = LightType.Point; key.range = 12f; key.intensity = 2.2f;
+            key.color = new Color(1f, 0.95f, 0.85f);
+            key.cullingMask = 1 << HeroLayer;
+        }
+        foreach (var tr in p.model.GetComponentsInChildren<Transform>(true)) tr.gameObject.layer = HeroLayer;
+        previewCam.enabled = true;
+        previewLight.enabled = true;
+        var t = p.transform;
+        previewCam.transform.position = t.position + t.forward * 4.2f + Vector3.up * 1.15f;
+        previewCam.transform.LookAt(t.position + Vector3.up * 0.95f);
+        Box(new Rect(r.x - 4 * S, r.y - 4 * S, r.width + 8 * S, r.height + 8 * S), Gold);
+        GUI.DrawTexture(r, previewRT, ScaleMode.ScaleAndCrop, false);
+        Text(new Rect(r.x, r.yMax - 50 * S, r.width, 40 * S), p.female ? "Студентка пятого курса" : "Студент пятого курса", sSmall, Color.white, TextAnchor.MiddleCenter);
+    }
+
+    public static void PickGender(bool female)
+    {
+        var p = GameManager.I.player;
+        if (p.female == female) return;
+        p.SetGender(female);
+        SFX.Voice("Incendio", 0.7f);
     }
 
     public void StartGame()
@@ -188,8 +240,22 @@ public class HUD : MonoBehaviour
         Text(new Rect(90 * S, H * 0.2f, W, 120 * S), "HOGWARTS LEGACY", sHuge, Gold);
         Text(new Rect(96 * S, H * 0.2f + 110 * S, W, 60 * S), "мини-версия: метла, заклинания и Ранрок", sBig, new Color(0.85f, 0.85f, 0.95f));
         float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
-        Text(new Rect(96 * S, H * 0.2f + 210 * S, W, 50 * S), "ENTER — новая игра · F9 — загрузить прогресс", sMed, new Color(1, 1, 1, pulse));
-        var r = new Rect(90 * S, H - 190 * S, 1000 * S, 125 * S);
+        Text(new Rect(96 * S, H * 0.2f + 300 * S, W, 50 * S), "ENTER — новая игра · F9 — загрузить прогресс", sMed, new Color(1, 1, 1, pulse));
+        // Выбор героя: мальчик или девочка.
+        bool fem = GameManager.I.player.female;
+        Text(new Rect(96 * S, H * 0.2f + 190 * S, 300 * S, 40 * S), "Твой герой:", sSmall, new Color(0.85f, 0.85f, 0.95f));
+        string[] opts = { "Мальчик [1]", "Девочка [2]" };
+        for (int i = 0; i < 2; i++)
+        {
+            var b = new Rect(250 * S + i * 250 * S, H * 0.2f + 180 * S, 230 * S, 60 * S);
+            bool on = fem == (i == 1);
+            Box(b, on ? new Color(0.55f, 0.42f, 0.15f, 0.9f) : Panel);
+            if (on) Box(new Rect(b.x, b.yMax - 4 * S, b.width, 4 * S), Gold);
+            Text(b, opts[i], sMed, on ? Color.white : new Color(0.75f, 0.75f, 0.8f), TextAnchor.MiddleCenter);
+            if (GUI.Button(b, GUIContent.none, GUIStyle.none)) PickGender(i == 1);
+        }
+        DrawHeroPreview(new Rect(W - 520 * S, H * 0.12f, 420 * S, 620 * S));
+        var r = new Rect(90 * S, H - 215 * S, 1000 * S, 160 * S);
         Box(r, Panel);
         Text(new Rect(r.x + 20 * S, r.y + 15 * S, r.width - 40 * S, r.height), Controls, sSmall, new Color(0.9f, 0.9f, 0.9f));
     }
@@ -426,27 +492,34 @@ public class HUD : MonoBehaviour
         if (!string.IsNullOrEmpty(q.progress))
             Text(new Rect(r.x + 16 * S, r.y + 50 * S + objH, w - 30 * S, 28 * S), q.progress, sSmall, new Color(0.7f, 0.9f, 1f));
 
-        // Активные поручения под основным квестом.
+        // Поручения не мешают сюжету: показываем только отслеживаемое и счётчик остальных; [Z] переключает фокус.
         var sq = SideQuests.I;
+        bool mainFocus = sq == null || sq.tracked == null;
+        if (!mainFocus) Box(new Rect(r.x, r.y, w, r.height), new Color(0, 0, 0, 0.35f));
         if (sq != null)
         {
             float y = r.yMax + 8 * S;
-            int shown = 0;
-            foreach (var s in sq.all)
+            var open = sq.Open;
+            var s = sq.tracked;
+            if (s != null)
             {
-                if (s.state != SQState.Active && s.state != SQState.Ready) continue;
-                if (shown++ >= 5) break;
                 var sr = new Rect(r.x, y, w, 50 * S);
-                Box(sr, new Color(0.04f, 0.06f, 0.1f, 0.6f));
-                Box(new Rect(sr.x, sr.y, 4 * S, sr.height), s == sq.tracked ? new Color(0.5f, 0.8f, 1f) : new Color(0.3f, 0.4f, 0.5f));
-                Text(new Rect(sr.x + 14 * S, sr.y + 3 * S, w - 20 * S, 24 * S), s.title, sTiny, s.state == SQState.Ready ? new Color(0.5f, 1f, 0.6f) : new Color(0.75f, 0.88f, 1f));
+                Box(sr, new Color(0.04f, 0.06f, 0.1f, 0.75f));
+                Box(new Rect(sr.x, sr.y, 4 * S, sr.height), new Color(0.5f, 0.8f, 1f));
+                Text(new Rect(sr.x + 14 * S, sr.y + 3 * S, w - 20 * S, 24 * S), "Поручение: " + s.title, sTiny, s.state == SQState.Ready ? new Color(0.5f, 1f, 0.6f) : new Color(0.75f, 0.88f, 1f));
                 Text(new Rect(sr.x + 14 * S, sr.y + 25 * S, w - 20 * S, 24 * S), s.desc + "  " + s.Progress, sTiny, new Color(0.8f, 0.8f, 0.85f));
                 y += 56 * S;
             }
+            if (open.Count > 0)
+                Text(new Rect(r.x + 4 * S, y, w, 26 * S), (mainFocus ? $"Поручений: {open.Count}" : "Сюжет — в фоне") + "  ·  [Z] сменить задание  ·  [O] журнал", sTiny, new Color(0.7f, 0.75f, 0.85f));
             var rt = sq.RaceTimer();
             if (rt != null) Text(new Rect(0, 150 * S, W, 40 * S), rt, sBig, new Color(1f, 0.85f, 0.4f), TextAnchor.MiddleCenter);
-            var tm = sq.TrackedMarker();
-            if (tm.HasValue && GameState.Playing) DrawMarker(cam, tm.Value, new Color(0.5f, 0.8f, 1f));
+            if (!mainFocus)
+            {
+                var tm = sq.TrackedMarker();
+                if (tm.HasValue && GameState.Playing) DrawMarker(cam, tm.Value, new Color(0.5f, 0.8f, 1f));
+                return;
+            }
         }
 
         if (!q.hasMarker || !GameState.Playing) return;
