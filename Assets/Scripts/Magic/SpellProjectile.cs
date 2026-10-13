@@ -125,6 +125,12 @@ public class SpellProjectile : MonoBehaviour
             foreach (var t in aoeBuf) Apply(t, point);
             bool big = type == SpellType.Bombarda;
             FX.Burst(point, color, big ? 120 : 60, big ? 16f : 10f, big ? 1.4f : 0.9f, 0.8f, -0.5f);
+            if (type == SpellType.Confringo)
+            {
+                FX.Burst(point, new Color(1f, 0.55f, 0.1f), 50, 5f, 0.7f, 1.1f, -2.5f);
+                FX.Burst(point, new Color(1f, 0.85f, 0.3f), 25, 3f, 0.5f, 0.9f, -3f);
+                SFX.Play("fire", 0.7f);
+            }
             if (big) FX.Shockwave(point - Vector3.up * 0.5f, color, aoe);
             FX.Flash(point, color, big ? 9f : 6f, big ? 20f : 14f, 0.4f);
             SFX.Play("boom", big ? 1f : 0.7f);

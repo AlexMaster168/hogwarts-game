@@ -172,7 +172,7 @@ public class CastleMap : MonoBehaviour
         bool can=!RoomServices.Threatened&&pc.inventory.galleons>=25;
         GUI.Label(new Rect(Screen.width-300,Screen.height-190,275,90),title+"\n"+detail,small);
         GUI.enabled=can;
-        if(GUI.Button(new Rect(Screen.width-300,Screen.height-100,275,40),RoomServices.Threatened?"Нельзя: рядом враги":"Переместиться — 25 г."))go();
+        if(GUI.Button(new Rect(Screen.width-300,Screen.height-100,275,40),RoomServices.Threatened?"Нельзя: "+RoomServices.ThreatReason:"Переместиться — 25 г."))go();
         GUI.enabled=true;
     }
 

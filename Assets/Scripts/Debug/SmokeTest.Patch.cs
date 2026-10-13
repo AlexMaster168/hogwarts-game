@@ -185,6 +185,74 @@ public partial class SmokeTest
         GameState.Set(GameMode.Play);
         HUD.Clear();
 
+        // ---- Далёкие враги и сюжетный этап не блокируют перемещение ----
+        foreach (var e in Enemy.All.ToArray()) if (e != null) Destroy(e.gameObject);
+        yield return Frames(2);
+        var stepWas = q.step;
+        q.SetStep(QuestManager.Step.Rift, false);
+        p.Teleport(WorldBuilder.Courtyard + Vector3.up * 0.3f);
+        yield return Frames(3);
+        CheckLocation(!RoomServices.Threatened, "Rift step far from the ruins does not block: " + RoomServices.ThreatReason);
+        var far = Enemy.Spawn(EnemyKind.DarkWizard, p.transform.position + new Vector3(60, 0.5f, 0), true);
+        yield return Frames(3);
+        CheckLocation(!RoomServices.Threatened, "Aggro enemy 60 m away does not block: " + RoomServices.ThreatReason);
+        far.transform.position = p.transform.position + new Vector3(100, 0.5f, 0);
+        yield return Frames(3);
+        CheckLocation(!far.aggro, "Enemy beyond 70 m calms down");
+        var close = Enemy.Spawn(EnemyKind.DarkWizard, p.transform.position + new Vector3(10, 0.5f, 0), true);
+        yield return Frames(2);
+        CheckLocation(RoomServices.Threatened && RoomServices.ThreatReason.Contains("м)"), "Close enemy blocks with reason: " + RoomServices.ThreatReason);
+        p.inventory.galleons = 100;
+        CheckLocation(!rs.TravelTo(0), "Travel refused next to an enemy");
+        foreach (var e in Enemy.All.ToArray()) if (e != null) Destroy(e.gameObject);
+        yield return Frames(2);
+        CheckLocation(rs.TravelTo(0), "Travel allowed once enemies are gone");
+        q.SetStep(stepWas, false);
+        yield return Frames(5);
+
+        // ---- Конфринго поджигает издалека, Диффиндо режет ----
+        {
+            DayNight.I.SetHour(12f);
+            var arena = new Vector3(90, 0.2f, -100);
+            Place(arena, arena + new Vector3(0, 1, 20));
+            yield return Frames(3);
+            var torch = Enemy.Spawn(EnemyKind.DarkWizard, arena + new Vector3(0, 0.5f, 22), false);
+            torch.health.Init(5000);
+            yield return Frames(3);
+            Aim(torch.targetable.AimPoint);
+            p.caster.target = torch.targetable;
+            p.caster.DebugCast(SpellType.Confringo);
+            for (float t0 = Time.realtimeSinceStartup; Time.realtimeSinceStartup - t0 < 3f && torch.burnT <= 0f;) yield return null;
+            CheckLocation(torch.burnT > 2f, "Confringo sets a far enemy on fire (22 m): burn=" + torch.burnT.ToString("0.0"));
+            yield return new WaitForSecondsRealtime(0.4f);
+            yield return ShotFrom("spell_confringo_burn", torch.transform.position + new Vector3(3f, 1.6f, -4f), torch.transform.position + Vector3.up);
+            Destroy(torch.gameObject);
+
+            var victim = Enemy.Spawn(EnemyKind.DarkWizard, arena + new Vector3(0, 0.5f, 8), false);
+            yield return Frames(3);
+            victim.health.Init(400);
+            Aim(victim.targetable.AimPoint);
+            p.caster.target = victim.targetable;
+            p.caster.DebugCast(SpellType.Diffindo);
+            for (float t0 = Time.realtimeSinceStartup; Time.realtimeSinceStartup - t0 < 2f && victim.cutT <= 0f;) yield return null;
+            CheckLocation(victim.cutT > 0f && !victim.IsDead, "Diffindo cuts and bleeds");
+            yield return ShotNow("spell_diffindo_slash", 1);
+            victim.health.Init(20);
+            victim.cutT = 0f;
+            yield return new WaitForSecondsRealtime(0.3f);
+            p.caster.DebugCast(SpellType.Diffindo);
+            for (float t0 = Time.realtimeSinceStartup; Time.realtimeSinceStartup - t0 < 2f && !victim.IsDead;) yield return null;
+            CheckLocation(victim.IsDead && victim.sliced, "Finishing Diffindo slices the enemy in two");
+            var halves = FindObjectsByType<SliceHalf>(FindObjectsSortMode.None);
+            CheckLocation(halves.Length >= 2, "Two halves exist: " + halves.Length);
+            var vp = arena + new Vector3(0, 0, 8);
+            yield return ShotFrom("spell_diffindo_sliced", vp + new Vector3(3.2f, 1.4f, -3.2f), vp + Vector3.up * 0.9f);
+            yield return new WaitForSecondsRealtime(1.1f);
+            var hs = FindObjectsByType<SliceHalf>(FindObjectsSortMode.None);
+            var mid = hs.Length > 0 ? hs.Aggregate(Vector3.zero, (acc, x) => acc + x.transform.position) / hs.Length : vp;
+            yield return ShotFrom("spell_diffindo_halves", mid + new Vector3(2.4f, 1.3f, -2.4f), mid + Vector3.up * 0.2f);
+        }
+
         // ---- Логово тёмных магов ----
         var morven = q.Npc("darkcamp");
         var izolda = q.Npc("darkgear");

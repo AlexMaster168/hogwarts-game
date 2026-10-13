@@ -43,7 +43,9 @@ public partial class SmokeTest
         book.learned=false;p.caster.learned.Remove(book);inv.galleons=500;
         CheckLocation(services.Study()&&p.caster.Knows(book.type)&&inv.galleons==300,"Library study cost and spell");
         q.SetStep(QuestManager.Step.Convoy,false);
+        var nearFoe=Enemy.Spawn(EnemyKind.DarkWizard,p.transform.position+new Vector3(8,.5f,0),true);
         CheckLocation(!SaveGame.Save()&&!services.Travel(7),"Combat blocks save and fast travel");
+        if(nearFoe!=null)Destroy(nearFoe.gameObject);
         foreach(var guard in q.encounter.ToArray())if(guard!=null)guard.health.TakeDamage(99999);
         q.SetStep(QuestManager.Step.Free,false);
         p.Teleport(WorldBuilder.Spawn);

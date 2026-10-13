@@ -62,7 +62,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1577018828030856001}
-  m_Father: {fileID: 1271085071161354807}
+  m_Father: {fileID: 1552864968021315250}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &746291399241352359
 GameObject:
@@ -95,6 +95,40 @@ Transform:
   m_Children:
   - {fileID: 6922635244037165203}
   m_Father: {fileID: 8328862487255602572}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &983258270496885102
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1552864968021315250}
+  m_Layer: 0
+  m_Name: Body
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1552864968021315250
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 983258270496885102}
+  serializedVersion: 2
+  m_LocalRotation: {x: -3.552703e-15, y: -0.00000011920933, z: -4.9431915e-30, w: 1}
+  m_LocalPosition: {x: -0.0000215305, y: 0.009306885, z: 0.00019310653}
+  m_LocalScale: {x: 1, y: 1.0000001, z: 1.0000001}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 8328862487255602572}
+  - {fileID: 4052691099985409660}
+  - {fileID: 7963225421527441065}
+  m_Father: {fileID: 5778138722511435062}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1214844918815559179
 GameObject:
@@ -497,7 +531,7 @@ Transform:
   m_LocalScale: {x: 1, y: 0.99999994, z: 0.99999994}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1271085071161354807}
+  - {fileID: 1552864968021315250}
   - {fileID: 3288098165973234964}
   - {fileID: 1808881699264898051}
   - {fileID: 1407575184536921359}
@@ -566,7 +600,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6414521416640830753}
-  m_Father: {fileID: 1271085071161354807}
+  m_Father: {fileID: 1552864968021315250}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4904262286625219961
 GameObject:
@@ -690,7 +724,7 @@ SkinnedMeshRenderer:
   m_Bones:
   - {fileID: 5778138722511435062}
   - {fileID: 3288098165973234964}
-  - {fileID: 1271085071161354807}
+  - {fileID: 1552864968021315250}
   - {fileID: 8328862487255602572}
   - {fileID: 1577018828030856001}
   - {fileID: 6922635244037165203}
@@ -971,40 +1005,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7098930503180979847}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &5956936561331661603
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1271085071161354807}
-  m_Layer: 0
-  m_Name: Body
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1271085071161354807
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5956936561331661603}
-  serializedVersion: 2
-  m_LocalRotation: {x: -3.552703e-15, y: -0.00000011920933, z: -4.9431915e-30, w: 1}
-  m_LocalPosition: {x: -0.0000215305, y: 0.009306885, z: 0.00019310653}
-  m_LocalScale: {x: 1, y: 1.0000001, z: 1.0000001}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8328862487255602572}
-  - {fileID: 4052691099985409660}
-  - {fileID: 7963225421527441065}
-  m_Father: {fileID: 5778138722511435062}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6261980732332502347
 GameObject:
   m_ObjectHideFlags: 0
@@ -1035,7 +1035,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2530439973868329014}
-  m_Father: {fileID: 1271085071161354807}
+  m_Father: {fileID: 1552864968021315250}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6318155119228311820
 GameObject:

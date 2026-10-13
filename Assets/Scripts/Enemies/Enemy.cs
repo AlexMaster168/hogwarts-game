@@ -24,7 +24,10 @@ public class Enemy : MonoBehaviour, ISpellTarget
     public bool Telegraphing => telegraphT > 0f;
     public bool TelegraphRed => telegraphT > 0f && (attackKind == 1 || attackKind == 4);
 
-    public float levitateT, stunT, burnT, disarmT, frozenT, crucioT, charmedT, slowT;
+    public float levitateT, stunT, burnT, disarmT, frozenT, crucioT, charmedT, slowT, cutT;
+    public bool sliced;
+    float flameT, cutTick;
+    Light fireLight;
     // Время последнего «холода» от дементора — HUD рисует иней по краям экрана.
     public static float ColdTime = -10f;
     float drainTick, resistHint;
@@ -205,15 +208,46 @@ public class Enemy : MonoBehaviour, ISpellTarget
             return;
         }
 
+        if (fireLight != null) fireLight.enabled = burnT > 0f;
         if (burnT > 0f)
         {
             burnT -= dt;
+            flameT -= dt;
+            if (flameT <= 0f)
+            {
+                flameT = 0.05f;
+                float hgt = targetable.aimHeight * 1.3f;
+                var at = transform.position + new Vector3(Random.Range(-0.35f, 0.35f), Random.Range(0.2f, hgt), Random.Range(-0.35f, 0.35f));
+                FX.Burst(at, Random.value < 0.5f ? new Color(1f, 0.45f, 0.08f) : new Color(1f, 0.8f, 0.2f), 7, 1.4f, 0.8f, 0.55f, -3.5f);
+            }
+            if (fireLight == null)
+            {
+                fireLight = new GameObject("BurnLight").AddComponent<Light>();
+                fireLight.transform.SetParent(transform, false);
+                fireLight.transform.localPosition = Vector3.up * targetable.aimHeight;
+                fireLight.type = LightType.Point;
+                fireLight.color = new Color(1f, 0.55f, 0.2f);
+                fireLight.range = 6f;
+            }
+            fireLight.intensity = 1.6f + Mathf.PerlinNoise(Time.time * 9f, 0f) * 1.4f;
             burnTick -= dt;
             if (burnTick <= 0f)
             {
                 burnTick = 0.5f;
                 FX.Burst(transform.position + Vector3.up * targetable.aimHeight, new Color(1f, 0.5f, 0.1f), 8, 2f, 0.5f, 0.5f, -1f);
                 health.TakeDamage(3f);
+                if (IsDead) return;
+            }
+        }
+        if (cutT > 0f)
+        {
+            cutT -= dt;
+            cutTick -= dt;
+            if (cutTick <= 0f)
+            {
+                cutTick = 0.5f;
+                FX.Burst(transform.position + Vector3.up * targetable.aimHeight, new Color(0.75f, 0.05f, 0.08f), 6, 2f, 0.22f, 0.5f, 2f);
+                health.TakeDamage(2.5f);
                 if (IsDead) return;
             }
         }
@@ -246,6 +280,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
         float dist = toP.magnitude;
         bool hidden = player.inventory != null && player.inventory.Invisible;
         if (!aggro && dist < aggroRange && !hidden) aggro = true;
+        else if (aggro && !Charmed && kind != EnemyKind.Boss && dist > LeashRange) LoseTarget();
         if (kind == EnemyKind.Dementor && aggro && !Charmed && dist < 7f && !hidden && GameState.Playing && !player.health.Dead)
         {
             // Холод дементора вытягивает силы, щит не помогает.
@@ -485,6 +520,8 @@ public class Enemy : MonoBehaviour, ISpellTarget
         }
     }
 
+    public const float LeashRange = 70f;
+
     public void LoseTarget()
     {
         aggro = false;
@@ -519,7 +556,11 @@ public class Enemy : MonoBehaviour, ISpellTarget
         switch (h.type)
         {
             case SpellType.Incendio: burnT = kind == EnemyKind.Inferius ? 5f : 3f; break;
-            case SpellType.Confringo: burnT = kind == EnemyKind.Inferius ? 4f : 2f; break;
+            case SpellType.Confringo: burnT = kind == EnemyKind.Inferius ? 5f : 3f; break;
+            case SpellType.Diffindo:
+                Slicer.Slash(transform.position + Vector3.up * targetable.aimHeight, h.dir);
+                cutT = 3f;
+                break;
             case SpellType.Patronus:
                 if (kind == EnemyKind.Dementor)
                 {
@@ -615,6 +656,9 @@ public class Enemy : MonoBehaviour, ISpellTarget
         var col = crit ? new Color(1f, 0.6f, 0.15f) : h.type == SpellType.Ancient ? new Color(0.4f, 0.85f, 1f) : levitateT > 0f ? new Color(1f, 0.95f, 0.4f) : Color.white;
         HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1f), (crit ? "КРИТ " : "") + Mathf.RoundToInt(dmg), col);
         health.TakeDamage(dmg);
+        // Добивающий Диффиндо режет врага пополам (кроме Ранрока — у него своя смерть).
+        if (IsDead && h.type == SpellType.Diffindo && kind != EnemyKind.Boss && !sliced)
+            sliced = Slicer.Slice(model, transform.position + Vector3.up * targetable.aimHeight * 0.85f, Slicer.CutNormal(h.dir), h.dir, transform.position.y, cc.radius * 0.6f);
         if (fromPlayer)
         {
             if (IsDead) { HitStop.Do(0.09f); GameManager.I.camRig.Shake(0.18f); }

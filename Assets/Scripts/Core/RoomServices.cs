@@ -8,18 +8,28 @@ public class RoomServices : MonoBehaviour
     public readonly HashSet<string> visited=new();
     public float harvestReady, mealReady;
     string room;
-    public static bool Combat => QuestManager.I!=null && (QuestManager.I.step==QuestManager.Step.Duel||QuestManager.I.step==QuestManager.Step.Ambush||
-        QuestManager.I.step==QuestManager.Step.ForestFight||QuestManager.I.step==QuestManager.Step.Boss||QuestManager.I.step==QuestManager.Step.Convoy||
-        QuestManager.I.step==QuestManager.Step.Rescue||QuestManager.I.step==QuestManager.Step.Rift||Trials.I.active>=0);
-    public static bool Threatened
+    // Бой — это только реальная опасность рядом: агрессивный враг ближе ThreatRange или идущее испытание, у площадки которого ты стоишь.
+    // Сюжетный этап сам по себе ничего не блокирует: «Пожиратель эха» у руин не мешает телепорту из замка.
+    public const float ThreatRange=35f, TrialRange=120f;
+    public static string ThreatReason
     {
         get
         {
-            if(Combat)return true;
-            foreach(var e in Enemy.All)if(e!=null&&!e.IsDead&&!e.Charmed&&e.aggro&&Vector3.Distance(e.transform.position,GameManager.I.player.transform.position)<40)return true;
-            return false;
+            if(GameManager.I==null||GameManager.I.player==null)return null;
+            var pp=GameManager.I.player.transform.position;
+            if(Trials.I!=null&&Trials.I.active>=0&&Vector3.Distance(pp,Trials.Sites[Trials.I.active])<TrialRange)return "идёт испытание";
+            Enemy near=null;float best=ThreatRange;
+            foreach(var e in Enemy.All)
+            {
+                if(e==null||e.IsDead||e.Charmed||!e.aggro)continue;
+                float d=Vector3.Distance(e.transform.position,pp);
+                if(d<best){best=d;near=e;}
+            }
+            return near!=null?$"рядом враг: {near.targetable.displayName} ({best:0} м)":null;
         }
     }
+    public static bool Threatened=>ThreatReason!=null;
+    public static bool Combat=>Threatened;
     // Точки перемещения в окрестностях: открываются, когда подходишь ближе 35 м; перемещение — с карты [V].
     public static readonly (string name,Vector3 pos,string detail)[] Waypoints=
     {

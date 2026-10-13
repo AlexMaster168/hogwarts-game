@@ -95,6 +95,40 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5768702361634850943}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &565973524375163583
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7911707046129858950}
+  m_Layer: 0
+  m_Name: Body
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7911707046129858950
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 565973524375163583}
+  serializedVersion: 2
+  m_LocalRotation: {x: -3.552703e-15, y: -0.00000011920933, z: -4.9431915e-30, w: 1}
+  m_LocalPosition: {x: -0.0000215305, y: 0.009306885, z: 0.00019310653}
+  m_LocalScale: {x: 1, y: 1.0000001, z: 1.0000001}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4436089009971476088}
+  - {fileID: 4494734363251478127}
+  - {fileID: 3703575883285107066}
+  m_Father: {fileID: 459543989242129464}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &765014625609056525
 GameObject:
   m_ObjectHideFlags: 0
@@ -219,7 +253,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 9037832975484764695}
-  m_Father: {fileID: 5801214150770010141}
+  m_Father: {fileID: 7911707046129858950}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1752653781880832797
 GameObject:
@@ -570,7 +604,7 @@ Transform:
   m_LocalScale: {x: 1, y: 0.99999994, z: 0.99999994}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 5801214150770010141}
+  - {fileID: 7911707046129858950}
   - {fileID: 4299334808358270172}
   - {fileID: 4165821472807821694}
   - {fileID: 3152841968314222402}
@@ -670,7 +704,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3878646246849995541}
-  m_Father: {fileID: 5801214150770010141}
+  m_Father: {fileID: 7911707046129858950}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5224573375759241477
 GameObject:
@@ -733,7 +767,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5680868336204858694}
-  m_Father: {fileID: 5801214150770010141}
+  m_Father: {fileID: 7911707046129858950}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5514186210580976592
 GameObject:
@@ -977,7 +1011,7 @@ SkinnedMeshRenderer:
   m_Bones:
   - {fileID: 459543989242129464}
   - {fileID: 4299334808358270172}
-  - {fileID: 5801214150770010141}
+  - {fileID: 7911707046129858950}
   - {fileID: 4436089009971476088}
   - {fileID: 9037832975484764695}
   - {fileID: 3408255708654073094}
@@ -1163,40 +1197,6 @@ Transform:
   m_Children:
   - {fileID: 5734331037971806323}
   m_Father: {fileID: 3703575883285107066}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &8844821499324725926
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5801214150770010141}
-  m_Layer: 0
-  m_Name: Body
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &5801214150770010141
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8844821499324725926}
-  serializedVersion: 2
-  m_LocalRotation: {x: -3.552703e-15, y: -0.00000011920933, z: -4.9431915e-30, w: 1}
-  m_LocalPosition: {x: -0.0000215305, y: 0.009306885, z: 0.00019310653}
-  m_LocalScale: {x: 1, y: 1.0000001, z: 1.0000001}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 4436089009971476088}
-  - {fileID: 4494734363251478127}
-  - {fileID: 3703575883285107066}
-  m_Father: {fileID: 459543989242129464}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8979250853794468672
 GameObject:
