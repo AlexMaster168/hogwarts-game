@@ -107,6 +107,11 @@ public partial class SmokeTest
         CheckLocation(sq.TrackedMarker().HasValue, "Duel quest has a marker");
         sq.CycleFocus(); CheckLocation(sq.tracked == b, "Z -> second side quest");
         CheckLocation(sq.TrackedMarker().HasValue, "Chest quest has a marker");
+        var qtp = CastleMap.QuestTarget(out var qtTitle, out _);
+        CheckLocation(qtp.HasValue && qtTitle == b.title, "Map quest target follows focused quest");
+        CastleMap.I.Open(); CastleMap.I.level = CastleMap.TabOf(qtp.Value);
+        yield return Shot("ui_map_quest_target");
+        CastleMap.I.Close();
         yield return Shot("quest_focus_side");
         sq.CycleFocus(); CheckLocation(sq.tracked == null, "Z -> back to story");
         sq.Focus(b);
@@ -121,16 +126,29 @@ public partial class SmokeTest
 
         // ---- Точки перемещения ----
         var rs = RoomServices.I;
-        foreach (var w in RoomServices.Waypoints) rs.visited.Remove(w.name);
-        p.Teleport(RoomServices.Waypoints[0].pos + new Vector3(0, 0.3f, 0));
-        yield return Frames(3);
-        CheckLocation(RoomServices.Discovered(0), "Walking near Hogsmeade discovers it");
-        CheckLocation(!RoomServices.Discovered(2), "Dark camp not discovered yet");
-        CheckLocation(!rs.TravelTo(2), "Can't travel to undiscovered point");
+        // Без посещения: любая комната замка и любая точка окрестностей доступны сразу.
+        rs.visited.Clear();
+        int kitchen = CastleLocations.All.FindIndex(l => l.name == "Кухня");
+        p.inventory.galleons = 100;
+        CheckLocation(kitchen >= 0 && rs.Travel(kitchen), "Travel to unvisited kitchen");
+        yield return Frames(10);
+        CheckLocation(CastleLocations.Current(p.transform.position) == "Кухня" && p.inventory.galleons == 75, "Landed in kitchen: " + CastleLocations.Current(p.transform.position));
+        foreach (var spot in new[] { new Vector3(120, 0, -40), new Vector3(-250, 0, 150), new Vector3(60, 0, 300), WorldBuilder.LakeCenter, new Vector3(500, 0, 500) })
+        {
+            p.inventory.galleons = 100;
+            var want = RoomServices.SafeOutdoor(spot);
+            bool ok = rs.TravelToPoint(spot);
+            yield return Frames(20);
+            var pos = p.transform.position;
+            CheckLocation(ok && new Vector2(pos.x - want.x, pos.z - want.z).magnitude < 15f && pos.y > -0.5f && pos.y < 4f && p.cc.isGrounded, $"Free point {spot} -> {pos}");
+            CheckLocation((new Vector3(pos.x, 0, pos.z) - WorldBuilder.LakeCenter).magnitude > 72f, "Not dropped into the lake");
+        }
+        CastleMap.I.Open(); CastleMap.I.level = 3; CastleMap.I.SelectPoint(new Vector3(150, 0, 40));
+        yield return Shot("ui_map_free_point");
+        CastleMap.I.Close();
         for (int i = 0; i < RoomServices.Waypoints.Length; i++)
         {
             var w = RoomServices.Waypoints[i];
-            rs.visited.Add(w.name);
             p.inventory.galleons = 100;
             bool ok = rs.TravelTo(i);
             yield return Frames(20);
@@ -140,6 +158,16 @@ public partial class SmokeTest
             CheckLocation(flat < 15f && pos.y > -0.5f && pos.y < w.pos.y + 4f && p.cc.isGrounded, $"Landed at {w.name}: {pos} grounded={p.cc.isGrounded}");
             CheckLocation(!Physics.CheckCapsule(pos + Vector3.up * 0.5f, pos + Vector3.up * 1.5f, 0.3f, ~0, QueryTriggerInteraction.Ignore) ||
                 Physics.OverlapCapsule(pos + Vector3.up * 0.5f, pos + Vector3.up * 1.5f, 0.3f, ~0, QueryTriggerInteraction.Ignore).All(c => c is CharacterController), "Not stuck at " + w.name);
+        }
+
+        // ---- Таблички комнат читаются с обеих сторон ----
+        var signs = FindObjectsByType<Transform>(FindObjectsSortMode.None).Where(t => t.name.StartsWith("Sign: ")).ToList();
+        CheckLocation(signs.Count >= 5 && signs.All(t => t.Find("Front") != null && t.Find("Back") != null && t.Find("Board") != null), "Signs are two-sided: " + signs.Count);
+        var sg = signs.FirstOrDefault(t => t.name.Contains("Лазарет")) ?? signs.FirstOrDefault();
+        if (sg != null)
+        {
+            yield return ShotFrom("sign_front", sg.position - sg.forward * 3.5f + Vector3.down * 0.6f, sg.position);
+            yield return ShotFrom("sign_back", sg.position + sg.forward * 3.5f + Vector3.down * 0.6f, sg.position);
         }
 
         // ---- Библиотека: список заклинаний и понятный отказ ----

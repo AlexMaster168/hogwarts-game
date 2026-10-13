@@ -144,12 +144,45 @@ public static partial class WorldBuilder
         CastleDoor.Create("Вернуться во двор",new Vector3(-9,y+.1f,34),new Vector3(11,.2f,18),false);
     }
 
+    // Двусторонняя табличка: доска и по надписи с каждой стороны. Шрифт TextMesh рисуется без отсечения граней,
+    // поэтому одна надпись сзади читалась зеркально — теперь её изнанку закрывает доска, а с той стороны своя надпись.
+    static Material signBoard,signMat;
+    static Font signFont;
+    static Font SignFont=>signFont??=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+    static Material SignMat
+    {
+        get
+        {
+            if(signMat!=null)return signMat;
+            var tpl=Resources.Load<Material>("HM_Text");
+            signMat=tpl!=null?new Material(tpl):new Material(SignFont.material);
+            signMat.mainTexture=SignFont.material.mainTexture;
+            return signMat;
+        }
+    }
     static void Sign(string text,Vector3 p,float yaw)
     {
         var g=new GameObject("Sign: "+text); g.transform.SetParent(kitRoot,false);
         g.transform.SetPositionAndRotation(p,Quaternion.Euler(0,yaw,0));
-        var t=g.AddComponent<TextMesh>(); t.text=text; t.fontSize=42; t.characterSize=.07f;
-        t.anchor=TextAnchor.MiddleCenter; t.color=new Color(1,.85f,.55f);
+        Bounds b=default;
+        for(int side=0;side<2;side++)
+        {
+            var tg=new GameObject(side==0?"Front":"Back");tg.transform.SetParent(g.transform,false);
+            tg.transform.localPosition=new Vector3(0,0,side==0?-.04f:.04f);
+            tg.transform.localRotation=Quaternion.Euler(0,side==0?0:180,0);
+            var t=tg.AddComponent<TextMesh>(); t.text=text; t.fontSize=42; t.characterSize=.07f;
+            t.anchor=TextAnchor.MiddleCenter; t.color=new Color(1,.85f,.55f);
+            t.font=SignFont; tg.GetComponent<MeshRenderer>().sharedMaterial=SignMat;
+            if(side==0)b=tg.GetComponent<MeshRenderer>().bounds;
+        }
+        float w=Mathf.Max(b.size.x,b.size.z)+.35f,h=b.size.y+.2f;
+        if(w<.6f){w=text.Length*.2f+.35f;h=.5f;}
+        var board=GameObject.CreatePrimitive(PrimitiveType.Cube);board.name="Board";
+        Object.Destroy(board.GetComponent<Collider>());
+        board.transform.SetParent(g.transform,false);
+        board.transform.localScale=new Vector3(w,h,.05f);
+        signBoard??=MatLib.Solid(new Color(.22f,.14f,.08f),.25f);
+        board.GetComponent<Renderer>().sharedMaterial=signBoard;
     }
 }
 

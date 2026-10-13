@@ -136,6 +136,8 @@ public class PlayerController : MonoBehaviour, ISpellTarget
     {
         cc.enabled = false;
         transform.position = pos;
+        // Автосинхронизация трансформов выключена: без этого следующий cc.Move может стартовать со старой позиции.
+        Physics.SyncTransforms();
         cc.enabled = true;
         velocity = Vector3.zero;
     }

@@ -27,6 +27,7 @@ public static class ProjectSetup
         MakeMat("HM_Add", "HM/Additive");
         MakeMat("HM_Fade", "HM/Fade");
         MakeMat("HM_Sky", "Skybox/Procedural");
+        MakeMat("HM_Text", "HM/Text");
         MakePostRes();
 
         if (!File.Exists(ScenePath))

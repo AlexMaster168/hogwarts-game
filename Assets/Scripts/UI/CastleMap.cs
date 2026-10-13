@@ -8,6 +8,7 @@ public class CastleMap : MonoBehaviour
     public static int ChangedFrame = -1;
     public int level;
     public int selected = -1, selectedWp = -1;
+    public Vector3? selectedPoint;
     public Vector3? target;
     Vector2 scroll;
     float zoom = 1;
@@ -28,8 +29,11 @@ public class CastleMap : MonoBehaviour
         zoom=1; pan=Vector2.zero; ChangedFrame=Time.frameCount; GameState.Set(GameMode.Map);
     }
     public void Close(){ChangedFrame=Time.frameCount;GameState.Set(GameMode.Play);}
-    public void Select(int index){selected=index;selectedWp=-1;target=CastleLocations.All[index].spawn;}
-    public void SelectWaypoint(int index){selectedWp=index;selected=-1;target=RoomServices.Waypoints[index].pos;}
+    public void Select(int index){selected=index;selectedWp=-1;selectedPoint=null;target=CastleLocations.All[index].spawn;}
+    public void SelectWaypoint(int index){selectedWp=index;selected=-1;selectedPoint=null;target=RoomServices.Waypoints[index].pos;}
+    public void SelectPoint(Vector3 p){selectedPoint=RoomServices.SafeOutdoor(p);selected=-1;selectedWp=-1;target=selectedPoint;}
+    public static Vector3 Unproject(Vector2 v,Rect area,Rect world)
+        => new Vector3(world.xMin+(v.x-area.x)/area.width*world.width,0,world.yMin+(area.yMax-v.y)/area.height*world.height);
     public static Vector2 Project(Vector3 p, Rect area, Rect world)
         => new Vector2(area.x+(p.x-world.xMin)/world.width*area.width,area.yMax-(p.z-world.yMin)/world.height*area.height);
     void Update()
@@ -99,9 +103,24 @@ public class CastleMap : MonoBehaviour
         if(canvas.Contains(ev.mousePosition)&&ev.type==EventType.MouseDrag&&ev.button==1){pan+=new Vector2(-ev.delta.x/canvas.width*world.width,ev.delta.y/canvas.height*world.height);ev.Use();}
         GUI.BeginGroup(canvas);
         DrawPlan(new Rect(0,0,canvas.width,canvas.height),world,level,true);
+        // Клик по пустому месту окрестностей или Хогсмида — своя точка перемещения.
+        var e2=Event.current;
+        if(level>=Outskirts&&e2.type==EventType.MouseDown&&e2.button==0&&e2.mousePosition.y>44&&new Rect(0,0,canvas.width,canvas.height).Contains(e2.mousePosition))
+        {SelectPoint(Unproject(e2.mousePosition,new Rect(0,0,canvas.width,canvas.height),world));e2.Use();}
         GUI.EndGroup();
         GUI.Label(new Rect(canvas.x,canvas.y,55,25),"С ↑",label);
-        GUI.Label(new Rect(25,Screen.height-50,Screen.width-50,45),"ЛКМ по помещению или голубой точке — выбрать · Колесо: масштаб · Правая кнопка: сдвиг\nГолубые точки — места перемещения (открываются, когда побываешь рядом), зелёные — тёмные маги с непростительными заклинаниями.",small);
+        // Баннер цели: где она и кнопка, чтобы открыть нужную вкладку.
+        var qt=QuestTarget(out var qTitle,out var qCol);
+        if(qt.HasValue)
+        {
+            int tab=TabOf(qt.Value);
+            var br=new Rect(canvas.x+60,canvas.y+6,Mathf.Min(620,canvas.width-80),30);
+            Box(br,new Color(0,0,0,.75f));Box(new Rect(br.x,br.y,4,br.height),qCol);
+            var bs=new GUIStyle(small){fontSize=15,fontStyle=FontStyle.Bold,alignment=TextAnchor.MiddleLeft};bs.normal.textColor=qCol;
+            GUI.Label(new Rect(br.x+10,br.y,br.width-130,br.height),"Цель задания: "+qTitle+" — "+TabNames[tab+1],bs);
+            if(tab!=level&&GUI.Button(new Rect(br.xMax-115,br.y+3,110,24),"Показать")){level=tab;pan=Vector2.zero;zoom=1;}
+        }
+        GUI.Label(new Rect(25,Screen.height-50,Screen.width-50,45),"ЛКМ по помещению, голубой точке или любому месту окрестностей — выбрать · Колесо: масштаб · Правая кнопка: сдвиг\nГолубые точки — места перемещения, розовая — своя точка, зелёные — тёмные маги с непростительными заклинаниями.",small);
         DrawList(pc);
     }
 
@@ -118,9 +137,8 @@ public class CastleMap : MonoBehaviour
             {
                 var w=RoomServices.Waypoints[i];
                 if(level==Village&&!InVillage(w.pos))continue;
-                bool on=RoomServices.Discovered(i);
-                GUI.color=on?WpOn:new Color(.7f,.7f,.75f);
-                if(GUI.Button(new Rect(0,y,250,35),(on?"◆ ":"◇ ")+w.name))SelectWaypoint(i);
+                GUI.color=WpOn;
+                if(GUI.Button(new Rect(0,y,250,35),"◆ "+w.name))SelectWaypoint(i);
                 GUI.color=Color.white;y+=40;
             }
             if(level==Outskirts){GUI.Label(new Rect(0,y,250,30),"Замок",head);y+=32;}
@@ -134,20 +152,25 @@ public class CastleMap : MonoBehaviour
             }
         GUI.EndScrollView();
 
-        string title=null,detail=null;bool can=false,known=false;System.Action go=null;
+        string title=null,detail=null;System.Action go=null;
         if(selected>=0)
         {
-            var l=CastleLocations.All[selected];title=l.name;detail=l.detail;known=RoomServices.I.visited.Contains(l.name);
+            var l=CastleLocations.All[selected];title=l.name;detail=l.detail;
             int s=selected;go=()=>RoomServices.I.Travel(s);
         }
         else if(selectedWp>=0)
         {
-            var w=RoomServices.Waypoints[selectedWp];title=w.name;detail=w.detail;known=RoomServices.Discovered(selectedWp);
+            var w=RoomServices.Waypoints[selectedWp];title=w.name;detail=w.detail;
             int s=selectedWp;go=()=>RoomServices.I.TravelTo(s);
         }
+        else if(selectedPoint.HasValue)
+        {
+            var pt=selectedPoint.Value;title="Выбранная точка";detail=$"x {pt.x:0}, z {pt.z:0}";
+            go=()=>RoomServices.I.TravelToPoint(pt);
+        }
         if(title==null)return;
-        can=known&&!RoomServices.Threatened&&pc.inventory.galleons>=25;
-        GUI.Label(new Rect(Screen.width-300,Screen.height-190,275,90),title+"\n"+detail+(known?"":"\nЕщё не открыто — доберись туда сам."),small);
+        bool can=!RoomServices.Threatened&&pc.inventory.galleons>=25;
+        GUI.Label(new Rect(Screen.width-300,Screen.height-190,275,90),title+"\n"+detail,small);
         GUI.enabled=can;
         if(GUI.Button(new Rect(Screen.width-300,Screen.height-100,275,40),RoomServices.Threatened?"Нельзя: рядом враги":"Переместиться — 25 г."))go();
         GUI.enabled=true;
@@ -229,7 +252,7 @@ public class CastleMap : MonoBehaviour
             var w=RoomServices.Waypoints[i];
             var v=Project(w.pos,area,world);
             if(!area.Contains(v))continue;
-            bool on=RoomServices.Discovered(i),sel=selectedWp==i;
+            bool on=true,sel=selectedWp==i;
             var r=new Rect(v.x-8,v.y-8,16,16);
             if(sel)Box(new Rect(r.x-3,r.y-3,22,22),Color.white);
             Box(r,on?WpOn:WpOff);
@@ -251,11 +274,59 @@ public class CastleMap : MonoBehaviour
             var dir=GameManager.I.player.transform.forward;
             var end=Project(p+dir*(floor==Outskirts?12:4),area,world);Box(new Rect(end.x-2,end.y-2,4,4),Color.white);
         }
-        if(target.HasValue && (outside || CastleLocations.Floor(target.Value)==floor))
+        if(selectedPoint.HasValue&&outside)
+        {var v=Project(selectedPoint.Value,area,world);Box(new Rect(v.x-7,v.y-7,14,14),Color.white);Box(new Rect(v.x-5,v.y-5,10,10),new Color(1f,.4f,.8f));}
+        if(target.HasValue && !selectedPoint.HasValue && (outside || CastleLocations.Floor(target.Value)==floor))
         {var v=Project(target.Value,area,world);Box(new Rect(v.x-6,v.y-6,12,12),Color.yellow);}
-        if(QuestManager.I!=null && QuestManager.I.hasMarker && (outside||CastleLocations.Floor(QuestManager.I.markerPos)==floor))
-        {var v=Project(QuestManager.I.markerPos,area,world);Box(new Rect(v.x-4,v.y-4,8,8),Color.green);}
+        // Значок цели текущего задания (сюжет — золотой, поручение в фокусе — голубой).
+        var qt=QuestTarget(out var qTitle,out var qCol);
+        int view=area.width<300?TabOf(p):floor,tt=qt.HasValue?TabOf(qt.Value):-9;
+        if(qt.HasValue && (tt==view || tt>=Outskirts&&view>=Outskirts))
+        {
+            var v=Project(qt.Value,area,world);
+            bool edge=!area.Contains(v);
+            v=new Vector2(Mathf.Clamp(v.x,area.xMin+10,area.xMax-10),Mathf.Clamp(v.y,area.yMin+10,area.yMax-10));
+            float pulse=1f+.18f*Mathf.Sin(Time.unscaledTime*5f);
+            float r=(area.width<300?7:11)*pulse;
+            Box(new Rect(v.x-r-2,v.y-r-2,2*r+4,2*r+4),Color.black);
+            Box(new Rect(v.x-r,v.y-r,2*r,2*r),qCol);
+            if(qTag==null)qTag=new GUIStyle(GUI.skin.label){alignment=TextAnchor.MiddleCenter,fontStyle=FontStyle.Bold,fontSize=area.width<300?11:16};
+            qTag.normal.textColor=Color.black;
+            GUI.Label(new Rect(v.x-r,v.y-r,2*r,2*r),"!",qTag);
+            if(area.width>=300)
+            {
+                var lbl=(edge?"→ ":"")+"Задание: "+qTitle;
+                var st=new GUIStyle(qTag){fontSize=14};st.normal.textColor=qCol;
+                var sz=st.CalcSize(new GUIContent(lbl));
+                var lr=new Rect(Mathf.Clamp(v.x-sz.x/2,area.xMin,area.xMax-sz.x-6),v.y-r-26,sz.x+6,22);
+                if(lr.y<area.yMin)lr.y=v.y+r+4;
+                Box(lr,new Color(0,0,0,.7f));GUI.Label(lr,lbl,st);
+            }
+        }
     }
+
+    GUIStyle qTag;
+
+    // Куда вести игрока сейчас: поручение в фокусе или сюжет.
+    public static Vector3? QuestTarget(out string title,out Color col)
+    {
+        title=null;col=new Color(1f,.83f,.3f);
+        var sq=SideQuests.I;
+        if(sq!=null&&sq.tracked!=null)
+        {
+            var m=sq.TrackedMarker();
+            if(m.HasValue){title=sq.tracked.title;col=new Color(.45f,.85f,1f);return m;}
+        }
+        var q=QuestManager.I;
+        if(q!=null&&q.hasMarker){title=q.title;return q.markerPos;}
+        return null;
+    }
+
+    // На какой вкладке карты лежит точка.
+    public static int TabOf(Vector3 p)
+        => CastleLocations.Current(p)=="Окрестности Хогвартса"?(InVillage(p)?Village:Outskirts):CastleLocations.Floor(p);
+
+    static readonly string[] TabNames={"подземелье","первый этаж","галерея","башня","окрестности","Хогсмид"};
 
     static void WorldRect(Rect w,Rect area,Rect world,Color c)
     {

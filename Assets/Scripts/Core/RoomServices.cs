@@ -33,17 +33,12 @@ public class RoomServices : MonoBehaviour
         ("Склеп",SideQuests.CryptPos+new Vector3(0,0,-16),"Старый склеп к северу от замка."),
         ("Руины",WorldBuilder.RuinsCenter+new Vector3(0,0,-30),"Древние руины на севере."),
     };
-    public static bool Discovered(int i)=>I!=null&&I.visited.Contains(Waypoints[i].name);
     void Awake(){I=this;visited.Add("Двор");}
     void Update()
     {
         if(!GameState.Playing)return;
         string here=CastleLocations.Current(GameManager.I.player.transform.position);
         if(here!="Окрестности Хогвартса")visited.Add(here);
-        var pp=GameManager.I.player.transform.position;
-        for(int i=0;i<Waypoints.Length;i++)
-            if(!visited.Contains(Waypoints[i].name)&&(pp-Waypoints[i].pos).sqrMagnitude<35*35)
-            {visited.Add(Waypoints[i].name);SFX.Play("pickup",0.5f);HUD.ShowToast("Открыта точка перемещения: "+Waypoints[i].name+" [V]",new Color(0.5f,0.9f,1f));}
         if(Input.GetKeyDown(KeyCode.F5))SaveGame.Save();
         if(Input.GetKeyDown(KeyCode.F9))SaveGame.Load();
     }
@@ -62,22 +57,40 @@ public class RoomServices : MonoBehaviour
     {
         if(index<0||index>=CastleLocations.All.Count||Threatened)return false;
         var l=CastleLocations.All[index];var p=GameManager.I.player;
-        if(!visited.Contains(l.name)||p.inventory.galleons<25)return false;
+        if(p.inventory.galleons<25)return false;
         p.inventory.galleons-=25;if(p.onBroom)p.ToggleBroom();
         p.Teleport(l.spawn);CastleMap.I.Close();GameManager.I.camRig.SnapBehind();
         HUD.ShowToast("Летучий порох: "+l.name);return true;
     }
     public bool TravelTo(int wp)
     {
-        if(wp<0||wp>=Waypoints.Length||Threatened||!Discovered(wp))return false;
+        if(wp<0||wp>=Waypoints.Length)return false;
+        return TravelToPoint(Waypoints[wp].pos,Waypoints[wp].name);
+    }
+
+    // Любая точка окрестностей (клик по карте): ищем землю рядом, озеро выталкивает на берег, край мира — внутрь.
+    public bool TravelToPoint(Vector3 p0,string label=null)
+    {
         var p=GameManager.I.player;
-        if(p.inventory.galleons<25)return false;
+        if(Threatened||p.inventory.galleons<25)return false;
+        p0=SafeOutdoor(p0);
         p.inventory.galleons-=25;if(p.onBroom)p.ToggleBroom();
         p.cc.enabled=false;
-        var spot=Ground(Waypoints[wp].pos);
+        var spot=Ground(p0);
         p.cc.enabled=true;
         p.Teleport(spot);if(CastleMap.I!=null)CastleMap.I.Close();GameManager.I.camRig.SnapBehind();
-        HUD.ShowToast("Перемещение: "+Waypoints[wp].name);return true;
+        HUD.ShowToast("Перемещение: "+(label??CastleLocations.Current(spot)));return true;
+    }
+
+    public static Vector3 SafeOutdoor(Vector3 p)
+    {
+        p.y=0;
+        var flat=new Vector2(p.x,p.z);
+        if(flat.magnitude>380)flat=flat.normalized*380;
+        p=new Vector3(flat.x,0,flat.y);
+        var fromLake=p-WorldBuilder.LakeCenter;fromLake.y=0;
+        if(fromLake.magnitude<74)p=WorldBuilder.LakeCenter+(fromLake.sqrMagnitude>0.01f?fromLake.normalized:Vector3.right)*76;
+        return p;
     }
 
     // Свободная площадка на земле рядом с точкой: луч сверху + проверка, что капсула игрока ни во что не упирается.
