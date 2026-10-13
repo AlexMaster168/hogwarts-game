@@ -315,7 +315,7 @@ public class SpellCaster : MonoBehaviour
     {
         SFX.Play("shield", 0.6f);
         FX.Burst(transform.position + Vector3.up * 1.2f + transform.forward * 0.8f, new Color(0.5f, 0.8f, 1f), 18, 4f);
-        pc.AddAncient(3f);
+        pc.AddAncient(1f);
     }
 
     public void OnParry()
@@ -323,6 +323,6 @@ public class SpellCaster : MonoBehaviour
         SFX.Play("parry", 0.7f);
         FX.Flash(transform.position + Vector3.up * 1.2f, new Color(0.5f, 0.8f, 1f), 5f, 10f, 0.3f);
         HUD.Float(transform.position + Vector3.up * 2.4f, "ОТРАЖЕНО!", new Color(0.5f, 0.85f, 1f));
-        pc.AddAncient(12f);
+        pc.AddAncient(6f);
     }
 }

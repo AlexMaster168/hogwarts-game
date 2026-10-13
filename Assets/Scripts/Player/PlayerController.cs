@@ -364,7 +364,7 @@ public class PlayerController : MonoBehaviour, ISpellTarget
     void Hurt(float dmg, Vector3 push)
     {
         if (onBroom) dmg *= 0.5f;
-        dmg *= inventory.DefenseMult;
+        dmg *= inventory.DefenseMult * Difficulty.Cur.dmg;
         health.TakeDamage(dmg);
         lastHurt = Time.time;
         if (visual != null) visual.Hit();

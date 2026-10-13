@@ -9,7 +9,8 @@ public partial class QuestManager : MonoBehaviour
     public enum Step
     {
         MeetFig, Sorting, MeetHecat, Dummies, MeetSebastian, Duel, MeetKogawa, Rings,
-        MeetNatsai, Ambush, GoForest, ForestFight, TakeRelic, FigReveal, Trials, FigVerdict, GoRuins, Boss, Aftermath, Archive, KitchenLetter, Convoy, Rescue, Seals, Rift, FinalReport, Free
+        MeetNatsai, Ambush, GoForest, ForestFight, TakeRelic, FigReveal, Trials, FigVerdict, GoRuins, Boss, Aftermath, Archive, KitchenLetter, Convoy, Rescue, Seals, Rift, FinalReport,
+        Ch3Call, Werewolves, PoacherTrail, PoacherCamp, FreeBeasts, GoblinMine, Graveyard, FortressMarch, Rookwood, Epilogue, Free
     }
 
     public Step step;
@@ -271,6 +272,9 @@ public partial class QuestManager : MonoBehaviour
             case Step.Aftermath: case Step.Archive: case Step.KitchenLetter: case Step.Convoy:
             case Step.Rescue: case Step.Seals: case Step.Rift: case Step.FinalReport:
                 ConfigureExtension(s); break;
+            case Step.Ch3Call: case Step.Werewolves: case Step.PoacherTrail: case Step.PoacherCamp: case Step.FreeBeasts:
+            case Step.GoblinMine: case Step.Graveyard: case Step.FortressMarch: case Step.Rookwood: case Step.Epilogue:
+                ConfigureCh3(s); break;
             case Step.Free:
                 title = "Свободная прогулка"; objective = "Исследуй мир и собери страницы путеводителя";
                 checkpoint = WorldBuilder.Courtyard;
@@ -295,7 +299,18 @@ public partial class QuestManager : MonoBehaviour
             e.Died += _ => enemiesDefeated++;
             encounter.Add(e);
         }
-        encounterTotal = list.Length;
+        // Сложно и Кошмар добавляют врагов в каждую сюжетную схватку.
+        int extra = list.Length > 0 ? Difficulty.Cur.extra : 0;
+        for (int i = 0; i < extra; i++)
+        {
+            var src = list[i % list.Length];
+            var k = src.kind == EnemyKind.Troll || src.kind == EnemyKind.Guardian || src.kind == EnemyKind.Necromancer || src.kind == EnemyKind.Berserker
+                ? EnemyKind.DarkWizard : src.kind;
+            var e = Enemy.Spawn(k, src.pos + new Vector3(-3f + i * 6f, 0.3f, -5f));
+            e.Died += _ => enemiesDefeated++;
+            encounter.Add(e);
+        }
+        encounterTotal = list.Length + extra;
     }
 
     int AliveCount()
@@ -309,6 +324,7 @@ public partial class QuestManager : MonoBehaviour
         if (!GameState.Playing) return;
         playTime += Time.deltaTime;
         if (UpdateExtension()) return;
+        if (UpdateCh3()) return;
         var pp = P.transform.position;
         switch (step)
         {
@@ -428,6 +444,7 @@ public partial class QuestManager : MonoBehaviour
     public void Talk(NPC npc)
     {
         if (TalkExtension(npc)) return;
+        if (TalkCh3(npc)) return;
         if (npc.id.StartsWith("keeper_"))
         {
             Trials.I.Talk(npc);

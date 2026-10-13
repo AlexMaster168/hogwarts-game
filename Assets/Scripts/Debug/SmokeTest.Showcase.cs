@@ -164,8 +164,7 @@ public partial class SmokeTest
     {
         if (shotDir == null) yield break;
         yield return Frames(frames);
-        ScreenCapture.CaptureScreenshot(System.IO.Path.Combine(shotDir, name + ".png"));
-        yield return Frames(2);
+        yield return Grab(name);
     }
 
     void ClearEnemies()

@@ -1,13 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum EnemyKind { DarkWizard, Duelist, Spider, Troll, Boss, Guardian, Inferius, Dementor, Goblin }
+public enum EnemyKind { DarkWizard, Duelist, Spider, Troll, Boss, Guardian, Inferius, Dementor, Goblin, Werewolf, Poacher, Berserker, Necromancer, Rookwood }
 
 public class Enemy : MonoBehaviour, ISpellTarget
 {
     public static readonly List<Enemy> All = new();
     public static event System.Action<Enemy> AnyDied;
-    public bool Heavy => kind == EnemyKind.Troll || kind == EnemyKind.Boss || kind == EnemyKind.Guardian;
+    public bool Heavy => kind == EnemyKind.Troll || kind == EnemyKind.Boss || kind == EnemyKind.Guardian || kind == EnemyKind.Rookwood || kind == EnemyKind.Berserker;
+    public bool IsBossKind => kind == EnemyKind.Boss || kind == EnemyKind.Rookwood;
 
     public EnemyKind kind;
     public Health health;
@@ -40,6 +41,10 @@ public class Enemy : MonoBehaviour, ISpellTarget
     float speed, attackCd = 1.5f, telegraphT, strafeT, strafeDir = 1f, burnTick, levBaseY, animT, deathT, castPose;
     int attackKind;
     bool dying, summoned1, summoned2;
+    // Сложность применяется в Start: так учитывается health.Init, который сюжет вызывает сразу после Spawn.
+    float baseHp, baseSpeed, summonCd = 8f, blinkCd = 9f;
+    bool started, enraged;
+    readonly List<Enemy> minions = new();
     Vector3 vel, knock;
     Light aura;
 
@@ -107,6 +112,33 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 hp = 80; e.speed = 4.4f; h = 1.3f; r = 0.35f; aim = 0.95f; name = "Гоблин Ранрока";
                 e.parts = Figures.Goblin(e.model);
                 break;
+            case EnemyKind.Werewolf:
+                hp = 180; e.speed = 7f; h = 2.1f; r = 0.5f; aim = 1.5f; name = "Оборотень";
+                e.parts = Figures.Humanoid(e.model, new Color(0.3f, 0.25f, 0.2f), new Color(0.35f, 0.28f, 0.22f), new Color(0.2f, 0.16f, 0.12f), new Color(0.4f, 0.3f, 0.2f));
+                e.aggroRange = 34f;
+                break;
+            case EnemyKind.Poacher:
+                hp = 110; e.speed = 3.8f; h = 1.8f; r = 0.4f; aim = 1.3f; name = "Браконьер Руквуда";
+                e.parts = Figures.Humanoid(e.model, new Color(0.35f, 0.28f, 0.18f), Figures.Skin, new Color(0.3f, 0.2f, 0.1f), new Color(0.55f, 0.4f, 0.2f));
+                e.aggroRange = 36f;
+                break;
+            case EnemyKind.Berserker:
+                hp = 240; e.speed = 5.2f; h = 1.7f; r = 0.5f; aim = 1.2f; name = "Гоблин-берсерк";
+                e.parts = Figures.Goblin(e.model);
+                break;
+            case EnemyKind.Necromancer:
+                hp = 280; e.speed = 3.2f; h = 1.9f; r = 0.4f; aim = 1.4f; name = "Некромант";
+                e.parts = Figures.Humanoid(e.model, new Color(0.08f, 0.14f, 0.1f), new Color(0.7f, 0.75f, 0.7f), new Color(0.05f, 0.05f, 0.05f), new Color(0.2f, 0.8f, 0.4f), true, new Color(0.06f, 0.1f, 0.07f), new Color(0.3f, 1f, 0.5f));
+                e.aura = go.AddComponent<Light>();
+                e.aura.type = LightType.Point; e.aura.color = new Color(0.3f, 1f, 0.45f); e.aura.range = 7f; e.aura.intensity = 1.6f;
+                break;
+            case EnemyKind.Rookwood:
+                hp = 1800; e.speed = 4.4f; h = 2.2f; r = 0.5f; aim = 1.6f; name = "Виктор Руквуд";
+                e.parts = Figures.Humanoid(e.model, new Color(0.25f, 0.03f, 0.05f), Figures.Skin, new Color(0.15f, 0.12f, 0.1f), new Color(0.8f, 0.6f, 0.15f), true, new Color(0.2f, 0.02f, 0.04f), new Color(1f, 0.2f, 0.2f));
+                t.isBoss = true;
+                e.aura = go.AddComponent<Light>();
+                e.aura.type = LightType.Point; e.aura.color = new Color(1f, 0.15f, 0.2f); e.aura.range = 10f; e.aura.intensity = 1.8f;
+                break;
             default:
                 hp = 70; e.speed = 3.6f; h = 1.8f; r = 0.4f; aim = 1.3f; name = "Тёмный маг";
                 e.parts = Figures.Humanoid(e.model, new Color(0.06f, 0.06f, 0.07f), new Color(0.78f, 0.78f, 0.76f), new Color(0.05f, 0.05f, 0.05f),
@@ -123,6 +155,11 @@ public class Enemy : MonoBehaviour, ISpellTarget
             EnemyKind.Inferius => Random.Range(20, 41),
             EnemyKind.Dementor => Random.Range(90, 141),
             EnemyKind.Goblin => Random.Range(40, 71),
+            EnemyKind.Werewolf => Random.Range(70, 111),
+            EnemyKind.Poacher => Random.Range(60, 96),
+            EnemyKind.Berserker => Random.Range(90, 131),
+            EnemyKind.Necromancer => 220,
+            EnemyKind.Rookwood => 2500,
             _ => Random.Range(60, 105),
         };
         e.visual = kind switch
@@ -135,6 +172,11 @@ public class Enemy : MonoBehaviour, ISpellTarget
             EnemyKind.Inferius => CharacterVisual.Attach(e.model, "worker_male", 1.8f, e.parts, false, new Color(0.55f, 0.66f, 0.58f)),
             EnemyKind.Dementor => null,
             EnemyKind.Goblin => CharacterVisual.Attach(e.model, "goblin_male", 1.25f, e.parts, true),
+            EnemyKind.Werewolf => CharacterVisual.Attach(e.model, "ninja_male", 2.1f, e.parts, false, new Color(0.5f, 0.4f, 0.32f)),
+            EnemyKind.Poacher => CharacterVisual.Attach(e.model, "worker_male", 1.8f, e.parts, true, new Color(0.75f, 0.6f, 0.45f)),
+            EnemyKind.Berserker => CharacterVisual.Attach(e.model, "goblin_male", 1.7f, e.parts, false, new Color(1f, 0.55f, 0.5f)),
+            EnemyKind.Necromancer => CharacterVisual.Attach(e.model, "rpg_wizard", 1.9f, e.parts, true, new Color(0.45f, 0.75f, 0.5f)),
+            EnemyKind.Rookwood => CharacterVisual.Attach(e.model, "rpg_rogue", 2.2f, e.parts, true, new Color(0.85f, 0.35f, 0.35f)),
             _ => CharacterVisual.Attach(e.model, "rpg_rogue", 1.8f, e.parts, true, new Color(0.45f, 0.4f, 0.5f)),
         };
         cc.height = h;
@@ -262,7 +304,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
             {
                 crucioTick = 0.4f;
                 FX.Burst(transform.position + Vector3.up * targetable.aimHeight, new Color(0.95f, 0.1f, 0.45f), 10, 3f, 0.4f, 0.4f);
-                health.TakeDamage(kind == EnemyKind.Boss ? 10f : 7f);
+                health.TakeDamage(IsBossKind ? 10f : 7f);
                 if (IsDead) return;
             }
         }
@@ -280,7 +322,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
         float dist = toP.magnitude;
         bool hidden = player.inventory != null && player.inventory.Invisible;
         if (!aggro && dist < aggroRange && !hidden) aggro = true;
-        else if (aggro && !Charmed && kind != EnemyKind.Boss && dist > LeashRange) LoseTarget();
+        else if (aggro && !Charmed && !IsBossKind && dist > LeashRange) LoseTarget();
         if (kind == EnemyKind.Dementor && aggro && !Charmed && dist < 7f && !hidden && GameState.Playing && !player.health.Dead)
         {
             // Холод дементора вытягивает силы, щит не помогает.
@@ -328,14 +370,129 @@ public class Enemy : MonoBehaviour, ISpellTarget
         var dirTo = dist > 0.01f ? toP / dist : transform.forward;
         if (telegraphT > 0f)
         {
-            telegraphT -= dt;
+            telegraphT -= dt * Difficulty.Cur.tele;
             castPose = 1f;
             if (telegraphT <= 0f) Execute(attackKind, dirTo, dist);
             return;
         }
-        attackCd -= dt;
+        attackCd -= dt * Difficulty.Cur.attack;
         switch (kind)
         {
+            case EnemyKind.Werewolf:
+                if (!enraged && health.Frac < 0.4f)
+                {
+                    enraged = true;
+                    speed *= 1.35f;
+                    HUD.Float(transform.position + Vector3.up * 2.6f, "Ярость!", new Color(1f, 0.4f, 0.2f));
+                    SFX.Play("heavy", 0.5f);
+                }
+                if (dist > 2.6f) desired = dirTo * speed;
+                if (attackCd <= 0f && dist < 7f)
+                {
+                    attackKind = 9;
+                    telegraphT = 0.5f;
+                    attackCd = enraged ? 1.1f : 1.5f;
+                    ThreatSense.Warn(false, 0.55f);
+                }
+                break;
+            case EnemyKind.Berserker:
+                if (dist > 2.2f) desired = dirTo * speed;
+                if (attackCd <= 0f && dist < 3.8f)
+                {
+                    attackKind = 11;
+                    telegraphT = 0.8f;
+                    attackCd = 2f;
+                    ThreatSense.Warn(true, 0.9f);
+                }
+                break;
+            case EnemyKind.Necromancer:
+            {
+                var side = new Vector3(dirTo.z, 0, -dirTo.x);
+                desired = side * strafeDir * speed * 0.5f;
+                if (dist > 20f) desired += dirTo * speed;
+                else if (dist < 11f) desired -= dirTo * speed;
+                summonCd -= dt * Difficulty.Cur.attack;
+                minions.RemoveAll(m => m == null || m.IsDead);
+                if (summonCd <= 0f && minions.Count < 3 + Difficulty.Cur.extra)
+                {
+                    attackKind = 12;
+                    telegraphT = 1f;
+                    summonCd = 13f;
+                    HUD.Float(transform.position + Vector3.up * 2.6f, "Восстаньте!", new Color(0.4f, 1f, 0.5f));
+                }
+                else if (attackCd <= 0f && dist < 34f && disarmT <= 0f)
+                {
+                    attackKind = Random.value < 0.4f ? 1 : 5;
+                    telegraphT = 0.7f;
+                    attackCd = Random.Range(2.2f, 3.2f);
+                    ThreatSense.Warn(attackKind == 1, 0.7f + dist / 20f);
+                }
+                break;
+            }
+            case EnemyKind.Rookwood:
+            {
+                int phase = health.Frac > 0.66f ? 1 : health.Frac > 0.33f ? 2 : 3;
+                if (phase >= 2 && !summoned1)
+                {
+                    summoned1 = true;
+                    Summon(EnemyKind.Poacher, 2 + Difficulty.Cur.extra);
+                    HUD.ShowToast("Руквуд зовёт браконьеров!", new Color(1f, 0.4f, 0.3f));
+                }
+                if (phase >= 3 && !summoned2)
+                {
+                    summoned2 = true;
+                    Summon(EnemyKind.Werewolf, 2 + Difficulty.Cur.extra);
+                    speed *= 1.3f;
+                    if (aura != null) aura.intensity = 4f;
+                    HUD.ShowToast("Руквуд выпускает оборотней!", new Color(1f, 0.3f, 0.2f));
+                }
+                // Аппарация: в третьей фазе прыгает за спину / вбок.
+                blinkCd -= dt;
+                if (phase >= 2 && blinkCd <= 0f && dist < 14f)
+                {
+                    blinkCd = phase == 3 ? 5f : 8f;
+                    var off = Quaternion.Euler(0, Random.Range(90f, 270f), 0) * (-dirTo) * Random.Range(9f, 13f);
+                    FX.Burst(transform.position + Vector3.up, new Color(0.8f, 0.1f, 0.2f), 40, 6f, 0.5f, 0.5f);
+                    cc.enabled = false;
+                    transform.position = P.transform.position + off + Vector3.up * 0.3f;
+                    Physics.SyncTransforms();
+                    cc.enabled = true;
+                    FX.Burst(transform.position + Vector3.up, new Color(0.8f, 0.1f, 0.2f), 40, 6f, 0.5f, 0.5f);
+                    SFX.Play("ancient", 0.5f);
+                }
+                strafeT -= dt;
+                if (strafeT <= 0f) { strafeT = Random.Range(1.2f, 2.5f); strafeDir = Random.value < 0.5f ? -1f : 1f; }
+                var side = new Vector3(dirTo.z, 0, -dirTo.x);
+                desired = side * strafeDir * speed * 0.8f;
+                if (dist > 15f) desired += dirTo * speed;
+                else if (dist < 7f) desired -= dirTo * speed;
+                if (attackCd <= 0f)
+                {
+                    float rv = Random.value;
+                    if (phase >= 2 && rv < 0.3f) { attackKind = 6; telegraphT = 0.8f; ThreatSense.Warn(true, 2.2f); }
+                    else if (rv < 0.6f) { attackKind = 5; telegraphT = 0.6f; ThreatSense.Warn(false, 0.6f + dist / 20f); }
+                    else { attackKind = 1; telegraphT = 0.55f; ThreatSense.Warn(true, 0.6f + dist / 20f); }
+                    attackCd = phase == 3 ? 1.3f : phase == 2 ? 1.8f : 2.3f;
+                }
+                break;
+            }
+            case EnemyKind.Poacher:
+            {
+                strafeT -= dt;
+                if (strafeT <= 0f) { strafeT = Random.Range(1.5f, 3f); strafeDir = Random.value < 0.5f ? -1f : 1f; }
+                var side = new Vector3(dirTo.z, 0, -dirTo.x);
+                desired = side * strafeDir * speed * 0.6f;
+                if (dist > 26f) desired += dirTo * speed;
+                else if (dist < 13f) desired -= dirTo * speed;
+                if (attackCd <= 0f && dist < 40f && disarmT <= 0f)
+                {
+                    attackKind = 10;
+                    telegraphT = 0.55f;
+                    attackCd = Random.Range(2f, 3f);
+                    ThreatSense.Warn(false, 0.55f + dist / 22f);
+                }
+                break;
+            }
             case EnemyKind.DarkWizard:
             case EnemyKind.Duelist:
             case EnemyKind.Goblin:
@@ -455,6 +612,33 @@ public class Enemy : MonoBehaviour, ISpellTarget
             case 5:
                 for (int i = -1; i <= 1; i++) FireBolt(false, i * 14f);
                 break;
+            case 9:
+                // Прыжок оборотня: рывок к герою и удар когтями.
+                knock = dirTo * 15f + Vector3.up * 3f;
+                SFX.Play("heavy", 0.4f);
+                if (dist < 4.2f) P.ReceiveMelee(enraged ? 26f : 20f, false, this, dirTo * 6f);
+                break;
+            case 10:
+                // Браконьер: два быстрых выстрела с разбросом.
+                FireBolt(false, -4f);
+                FireBolt(false, 4f);
+                break;
+            case 11:
+                // Берсерк крутится с топором: удар по кругу.
+                FX.Shockwave(transform.position, new Color(1f, 0.4f, 0.2f), 3.6f);
+                SFX.Play("heavy", 0.5f);
+                if (dist < 3.8f) P.ReceiveMelee(24f, false, this, dirTo * 8f);
+                break;
+            case 12:
+                for (int i = 0; i < 2; i++)
+                {
+                    var d = Quaternion.Euler(0, i * 180f + 90f, 0) * dirTo;
+                    var m = Spawn(EnemyKind.Inferius, transform.position + d * 3f + Vector3.up * 0.4f);
+                    minions.Add(m);
+                    FX.Burst(m.transform.position + Vector3.up, new Color(0.3f, 1f, 0.45f), 30, 4f, 0.5f, 0.6f, -1f);
+                }
+                SFX.Play("curse", 0.6f);
+                break;
             case 7:
                 knock = dirTo * 5f;
                 if (dist < 2.8f) P.ReceiveMelee(16f, false, this, dirTo * 4f);
@@ -521,6 +705,25 @@ public class Enemy : MonoBehaviour, ISpellTarget
     }
 
     public const float LeashRange = 70f;
+
+    void Start()
+    {
+        started = true;
+        baseHp = health.max;
+        baseSpeed = speed;
+        goldDrop = Mathf.RoundToInt(goldDrop * Difficulty.Cur.reward);
+        ApplyDifficulty();
+    }
+
+    public void ApplyDifficulty()
+    {
+        if (!started || kind == EnemyKind.Duelist) return;
+        var d = Difficulty.Cur;
+        float frac = health.Frac;
+        health.max = baseHp * d.hp;
+        health.current = Mathf.Max(1f, health.max * frac);
+        speed = baseSpeed * d.speed * (enraged ? 1.35f : 1f);
+    }
 
     public void LoseTarget()
     {
@@ -595,12 +798,12 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 Stun(heavy ? 1.2f : 2.5f);
                 break;
             case SpellType.Ancient:
-                if (kind == EnemyKind.Boss) dmg = health.max * 0.12f;
+                if (IsBossKind) dmg = health.max * 0.12f;
                 break;
             case SpellType.Expelliarmus:
-                if (kind == EnemyKind.DarkWizard || kind == EnemyKind.Duelist || kind == EnemyKind.Boss)
+                if (kind == EnemyKind.DarkWizard || kind == EnemyKind.Duelist || kind == EnemyKind.Poacher || kind == EnemyKind.Necromancer || IsBossKind)
                 {
-                    disarmT = kind == EnemyKind.Boss ? 2f : 5f;
+                    disarmT = IsBossKind ? 2f : 5f;
                     HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1.5f), "Обезоружен!", new Color(1f, 0.5f, 0.5f));
                 }
                 Stun(0.6f);
@@ -620,11 +823,11 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 Freeze(heavy ? 2f : 4f);
                 break;
             case SpellType.Crucio:
-                crucioT = kind == EnemyKind.Boss ? 2f : 4f;
+                crucioT = IsBossKind ? 2f : 4f;
                 telegraphT = 0f;
                 break;
             case SpellType.Imperio:
-                if (kind == EnemyKind.Boss || kind == EnemyKind.Duelist || kind == EnemyKind.Guardian || kind == EnemyKind.Dementor)
+                if (IsBossKind || kind == EnemyKind.Duelist || kind == EnemyKind.Guardian || kind == EnemyKind.Dementor)
                 {
                     Stun(1f);
                     HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1.5f), "Сопротивляется!", new Color(0.9f, 0.9f, 0.5f));
@@ -632,7 +835,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 else Charm(15f);
                 break;
             case SpellType.AvadaKedavra:
-                dmg = kind == EnemyKind.Boss ? health.max * 0.2f : kind == EnemyKind.Duelist ? 40f : health.current + 1f;
+                dmg = IsBossKind ? health.max * 0.2f : kind == EnemyKind.Duelist ? 40f : health.current + 1f;
                 FX.Flash(transform.position + Vector3.up, new Color(0.2f, 1f, 0.25f), 8f, 15f, 0.5f);
                 break;
         }
@@ -657,7 +860,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
         HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1f), (crit ? "КРИТ " : "") + Mathf.RoundToInt(dmg), col);
         health.TakeDamage(dmg);
         // Добивающий Диффиндо режет врага пополам (кроме Ранрока — у него своя смерть).
-        if (IsDead && h.type == SpellType.Diffindo && kind != EnemyKind.Boss && !sliced)
+        if (IsDead && h.type == SpellType.Diffindo && !IsBossKind && !sliced)
             sliced = Slicer.Slice(model, transform.position + Vector3.up * targetable.aimHeight * 0.85f, Slicer.CutNormal(h.dir), h.dir, transform.position.y, cc.radius * 0.6f);
         if (fromPlayer)
         {
@@ -666,7 +869,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
         }
         if (visual != null && !IsDead) visual.Hit();
         var p = P;
-        if (p != null && h.source == p.gameObject) p.AddAncient(dmg * 0.35f);
+        if (p != null && h.source == p.gameObject) p.AddAncient(Mathf.Min(dmg * 0.07f, 4f) + (IsDead ? 6f : 0f));
         if (kind == EnemyKind.Duelist && !dying && health.current <= health.minHealth + 0.01f) Yield();
     }
 
@@ -682,11 +885,11 @@ public class Enemy : MonoBehaviour, ISpellTarget
         if (visual != null) { visual.anim.speed = 1f; visual.SetDead(true); }
         if (charmLight != null) charmLight.enabled = false;
         if (goldDrop > 0) Coin.Drop(transform.position + Vector3.up, goldDrop);
-        FX.Burst(transform.position + Vector3.up * targetable.aimHeight, new Color(0.6f, 0.2f, 0.9f), kind == EnemyKind.Boss ? 150 : 40, 6f, 0.7f, 0.9f, -0.3f);
-        SFX.Play(kind == EnemyKind.Boss ? "boom" : "hit", 0.7f);
+        FX.Burst(transform.position + Vector3.up * targetable.aimHeight, new Color(0.6f, 0.2f, 0.9f), IsBossKind ? 150 : 40, 6f, 0.7f, 0.9f, -0.3f);
+        SFX.Play(IsBossKind ? "boom" : "hit", 0.7f);
         Died?.Invoke(this);
         AnyDied?.Invoke(this);
-        Destroy(gameObject, kind == EnemyKind.Boss ? 3f : 1.6f);
+        Destroy(gameObject, IsBossKind ? 3f : 1.6f);
     }
 
     // Себастьян не умирает — сдаётся.

@@ -70,6 +70,7 @@ public static partial class WorldBuilder
         Crypt();
         ShadyTent();
         DarkCamp();
+        Chapter3();
         Random.state = state;
         StaticBatchingUtility.Combine(Root.gameObject);
     }
@@ -566,6 +567,7 @@ public static partial class WorldBuilder
         foreach (var b in Activities.BeastSpots) if ((b.home - p).magnitude < 10) return true;
         if ((Activities.SnitchStand - p).magnitude < 6) return true;
         if ((DarkCampPos - p).magnitude < 18) return true;
+        if (BlockedCh3(p)) return true;
         return false;
     }
 

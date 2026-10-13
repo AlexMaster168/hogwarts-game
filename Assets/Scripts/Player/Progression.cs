@@ -32,6 +32,11 @@ public class Progression : MonoBehaviour
         EnemyKind.Inferius => 20,
         EnemyKind.Dementor => 45,
         EnemyKind.Goblin => 22,
+        EnemyKind.Werewolf => 50,
+        EnemyKind.Poacher => 30,
+        EnemyKind.Berserker => 55,
+        EnemyKind.Necromancer => 120,
+        EnemyKind.Rookwood => 600,
         _ => 25,
     };
 

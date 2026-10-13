@@ -320,6 +320,7 @@ public partial class SmokeTest
         SaveGame.TestPath = null;
         CheckLocation(p.female && p.visual.name.Contains("witch"), "Load restores girl");
         p.SetGender(false);
+        yield return DifficultyTest();
         Debug.Log($"HM_PATCH_RESULT errors={errors}");
     }
 

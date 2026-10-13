@@ -49,8 +49,20 @@ public partial class SmokeTest : MonoBehaviour
     {
         if (shotDir == null) yield break;
         yield return Frames(25);
-        ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, name + ".png"));
-        yield return Frames(3);
+        yield return Grab(name);
+    }
+
+    // Кадр забираем сами в конце кадра: CaptureScreenshot молчит, если окно не на экране (заблокирован ПК, свёрнуто).
+    IEnumerator Grab(string name)
+    {
+        yield return new WaitForEndOfFrame();
+        var tex = ScreenCapture.CaptureScreenshotAsTexture();
+        if (tex != null)
+        {
+            File.WriteAllBytes(Path.Combine(shotDir, name + ".png"), tex.EncodeToPNG());
+            Destroy(tex);
+        }
+        yield return Frames(2);
     }
 
     void Aim(Vector3 world)
@@ -121,7 +133,7 @@ public partial class SmokeTest : MonoBehaviour
         Place(WorldBuilder.Spawn, new Vector3(0, 8, 0));
         yield return Shot("02_arrival");
 
-        float deadline = Time.realtimeSinceStartup + 480f;
+        float deadline = Time.realtimeSinceStartup + 900f;
         while (GameState.Mode != GameMode.Victory && Time.realtimeSinceStartup < deadline)
         {
             if (GameState.Mode == GameMode.Dead)
@@ -331,6 +343,7 @@ public partial class SmokeTest : MonoBehaviour
     IEnumerator DoStep()
     {
         if (q.ExtensionActive) { yield return ExtensionSteps(); yield break; }
+        if (q.Chapter3Active) { yield return Chapter3Steps(); yield break; }
         switch (q.step)
         {
             case QuestManager.Step.MeetFig:

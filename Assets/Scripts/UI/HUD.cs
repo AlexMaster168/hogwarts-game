@@ -60,6 +60,7 @@ public class HUD : MonoBehaviour
             case GameMode.Title:
                 if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) PickGender(false);
                 if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) PickGender(true);
+                for (int i = 0; i < 4; i++) if (Input.GetKeyDown(KeyCode.Alpha3 + i)) PickDifficulty(i);
                 if (enter || Input.GetKeyDown(KeyCode.Space)) StartGame();
                 break;
             case GameMode.Play:
@@ -129,6 +130,30 @@ public class HUD : MonoBehaviour
         Box(new Rect(r.x - 4 * S, r.y - 4 * S, r.width + 8 * S, r.height + 8 * S), Gold);
         GUI.DrawTexture(r, previewRT, ScaleMode.ScaleAndCrop, false);
         Text(new Rect(r.x, r.yMax - 50 * S, r.width, 40 * S), p.female ? "Студентка пятого курса" : "Студент пятого курса", sSmall, Color.white, TextAnchor.MiddleCenter);
+    }
+
+    // Четыре кнопки сложности; под ними — что меняется.
+    void DifficultyRow(float x, float y, bool keys)
+    {
+        for (int i = 0; i < Difficulty.Levels.Length; i++)
+        {
+            var lv = Difficulty.Levels[i];
+            var b = new Rect(x + i * 190 * S, y, 175 * S, 52 * S);
+            bool on = Difficulty.Index == i;
+            Box(b, on ? new Color(lv.color.r * 0.45f, lv.color.g * 0.45f, lv.color.b * 0.45f, 0.95f) : Panel);
+            if (on) Box(new Rect(b.x, b.yMax - 4 * S, b.width, 4 * S), lv.color);
+            Text(b, lv.name + (keys ? $" [{i + 3}]" : ""), sSmall, on ? Color.white : Color.Lerp(lv.color, Color.white, 0.45f), TextAnchor.MiddleCenter);
+            if (GUI.Button(b, GUIContent.none, GUIStyle.none)) PickDifficulty(i);
+        }
+        Text(new Rect(x, y + 56 * S, 760 * S, 30 * S), Difficulty.Cur.desc, sTiny, Difficulty.Cur.color);
+    }
+
+    public static void PickDifficulty(int i)
+    {
+        if (Difficulty.Index == i) return;
+        Difficulty.Set(i);
+        SFX.Play("click", 0.5f);
+        if (GameState.Mode != GameMode.Title) ShowToast("Сложность: " + Difficulty.Cur.name, Difficulty.Cur.color);
     }
 
     public static void PickGender(bool female)
@@ -238,9 +263,11 @@ public class HUD : MonoBehaviour
         float W = Screen.width, H = Screen.height;
         GUI.DrawTexture(new Rect(0, 0, W * 0.7f, H), fadeLeft);
         Text(new Rect(90 * S, H * 0.2f, W, 120 * S), "HOGWARTS LEGACY", sHuge, Gold);
-        Text(new Rect(96 * S, H * 0.2f + 110 * S, W, 60 * S), "мини-версия: метла, заклинания и Ранрок", sBig, new Color(0.85f, 0.85f, 0.95f));
+        Text(new Rect(96 * S, H * 0.2f + 110 * S, W, 60 * S), "мини-версия: метла, заклинания, Ранрок и Руквуд", sBig, new Color(0.85f, 0.85f, 0.95f));
         float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
-        Text(new Rect(96 * S, H * 0.2f + 300 * S, W, 50 * S), "ENTER — новая игра · F9 — загрузить прогресс", sMed, new Color(1, 1, 1, pulse));
+        Text(new Rect(96 * S, H * 0.2f + 390 * S, W, 50 * S), "ENTER — новая игра · F9 — загрузить прогресс", sMed, new Color(1, 1, 1, pulse));
+        Text(new Rect(96 * S, H * 0.2f + 270 * S, 300 * S, 40 * S), "Сложность:", sSmall, new Color(0.85f, 0.85f, 0.95f));
+        DifficultyRow(250 * S, H * 0.2f + 260 * S, true);
         // Выбор героя: мальчик или девочка.
         bool fem = GameManager.I.player.female;
         Text(new Rect(96 * S, H * 0.2f + 190 * S, 300 * S, 40 * S), "Твой герой:", sSmall, new Color(0.85f, 0.85f, 0.95f));
@@ -625,8 +652,10 @@ public class HUD : MonoBehaviour
         Text(new Rect(0, H * 0.18f, W, 100 * S), "ПАУЗА", sHuge, Gold, TextAnchor.MiddleCenter);
         Text(new Rect(W * 0.2f, H * 0.36f, W * 0.6f, 160 * S), Controls, sSmall, Color.white, TextAnchor.UpperCenter);
         var bw = 360 * S;
-        if (GUI.Button(new Rect((W - bw) / 2, H * 0.58f, bw, 56 * S), "Продолжить (Esc)")) GameState.Set(GameMode.Play);
-        if (GUI.Button(new Rect((W - bw) / 2, H * 0.58f + 70 * S, bw, 56 * S), "Выйти из игры"))
+        Text(new Rect(0, H * 0.47f, W, 36 * S), "Сложность (можно менять в любой момент):", sSmall, new Color(0.85f, 0.85f, 0.95f), TextAnchor.MiddleCenter);
+        DifficultyRow((W - 4 * 190 * S) / 2f + 7 * S, H * 0.47f + 38 * S, false);
+        if (GUI.Button(new Rect((W - bw) / 2, H * 0.62f, bw, 56 * S), "Продолжить (Esc)")) GameState.Set(GameMode.Play);
+        if (GUI.Button(new Rect((W - bw) / 2, H * 0.62f + 70 * S, bw, 56 * S), "Выйти из игры"))
         {
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;

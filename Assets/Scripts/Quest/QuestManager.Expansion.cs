@@ -16,6 +16,7 @@ public partial class QuestManager
     GameObject clue;
     public string InteractionHint()
     {
+        if(Chapter3Active)return HintCh3();
         if(!ExtensionActive)return null;
         if(step==Step.Archive||step==Step.KitchenLetter||step==Step.Seals)
             return Vector3.Distance(P.transform.position,markerPos)<3 ? "[E] "+(step==Step.Seals?"Восстановить печать":"Изучить улику") : null;
@@ -72,6 +73,7 @@ public partial class QuestManager
     }
     public bool InteractExtension()
     {
+        if(Chapter3Active)return InteractCh3();
         if(InteractionHint()==null)return false;
         if(clue!=null)Destroy(clue);
         SFX.Play("ancient",.6f);
@@ -111,8 +113,8 @@ public partial class QuestManager
             Dialogue.Show(()=>SetStep(Step.Archive),new Line(Fig,"Победа над Ранроком не уничтожила осколки хранилища. Кто-то похищает их."),
                 new Line(Fig,"Начни с хроники на верхнем этаже библиотеки. Затем проверь письма на кухне: там видели незнакомую сову."));
         else if(step==Step.FinalReport)
-            Dialogue.Show(()=>{SetStep(Step.Free);GameState.Set(GameMode.Victory);},new Line(Fig,"Ты спас не только хранилище, но и память Хранителей. Школа снова защищена."),
-                new Line(Fig,"Теперь продолжай учёбу. Используй комнаты, путешествуй и помогай профессорам."));
+            Dialogue.Show(()=>SetStep(Step.Ch3Call),new Line(Fig,"Ты спас не только хранилище, но и память Хранителей. Школа снова защищена."),
+                new Line(Fig,"Но отдыхать рано: профессор Гекат искала тебя. В округе неспокойно."));
         return true;
     }
 }
