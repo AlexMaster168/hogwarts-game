@@ -37,6 +37,15 @@ public class Progression : MonoBehaviour
         EnemyKind.Berserker => 55,
         EnemyKind.Necromancer => 120,
         EnemyKind.Rookwood => 600,
+        EnemyKind.GraveHound => 45,
+        EnemyKind.Mourner => 55,
+        EnemyKind.Chorister => 90,
+        EnemyKind.Bellringer or EnemyKind.Gatekeeper => 650,
+        EnemyKind.NamelessKing => 900,
+        EnemyKind.Vampire => 60,
+        EnemyKind.Golem => 110,
+        EnemyKind.IceWraith => 50,
+        EnemyKind.Mrax => 1000,
         _ => 25,
     };
 

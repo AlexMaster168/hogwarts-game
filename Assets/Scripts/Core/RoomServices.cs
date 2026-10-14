@@ -42,6 +42,12 @@ public class RoomServices : MonoBehaviour
         ("Опушка Запретного леса",WorldBuilder.ForestCenter+new Vector3(70,0,-50),"Вход в Запретный лес."),
         ("Склеп",SideQuests.CryptPos+new Vector3(0,0,-16),"Старый склеп к северу от замка."),
         ("Руины",WorldBuilder.RuinsCenter+new Vector3(0,0,-30),"Древние руины на севере."),
+        ("Часовня безмолвных",QuestManager.Chapel+Vector3.back*24,"Глава 4: пропавшая экспедиция и Звонарь пустоты."),
+        ("Врата Завесы",QuestManager.Veil+Vector3.back*24,"Глава 5: память Хранителя и Безымянный король."),
+        ("Поместье Мракс",WorldBuilder.ManorPos+Vector3.back*24,"Глава 6: особняк на западе, где завелись вампиры."),
+        ("Каменоломня",WorldBuilder.QuarryPos+Vector3.back*24,"Глава 6: южная каменоломня с големами."),
+        ("Ледяная пещера",WorldBuilder.IceCavePos+Vector3.back*24,"Глава 6: пещера ледяных призраков на юго-западе."),
+        ("Утёс ветров",WorldBuilder.PeakPos+Vector3.back*24,"Глава 6: кольцо менгиров к востоку от Хогсмида."),
     };
     void Awake(){I=this;visited.Add("Двор");}
     void Update()

@@ -19,6 +19,8 @@ public class PlayerController : MonoBehaviour, ISpellTarget
     public float ancient;
     public NPC nearbyNpc;
     public Chest nearbyChest;
+    // Алохомора: открывает запертые хранилища. Учит смотритель Мун.
+    public bool alohomora;
     public float lastHurt = -10f;
 
     public bool Dodging => dodgeT > 0f;
@@ -156,7 +158,9 @@ public class PlayerController : MonoBehaviour, ISpellTarget
         if (Input.GetKeyDown(KeyCode.E))
         {
             var door = CastleDoor.Nearby(transform.position);
+            var vault = LockedVault.Nearby(transform.position);
             if (door != null) door.Use(this);
+            else if (vault != null) vault.Use(this);
             else if (QuestManager.I.InteractExtension()) { }
             else if (Activities.TryInteract(this)) { }
             else if (RoomServices.TryUse(this)) { }
@@ -183,6 +187,7 @@ public class PlayerController : MonoBehaviour, ISpellTarget
         var move = fwd * inp.z + right * inp.x;
         bool shield = caster.ShieldActive;
         float speed = shield ? 2.5f : Input.GetKey(KeyCode.LeftShift) ? 8.5f : 5f;
+        if (chillT > 0f) { chillT -= dt; speed *= 0.55f; Enemy.ColdTime = Time.time; }
 
         if (Input.GetKeyDown(KeyCode.LeftControl) && dodgeCd <= 0f && cc.isGrounded) StartDodge(move.sqrMagnitude > 0.01f ? move.normalized : -fwd);
 
@@ -325,6 +330,14 @@ public class PlayerController : MonoBehaviour, ISpellTarget
         if (!wasFull && ancient >= 100f) HUD.ShowToast("Древняя магия готова! [F]", new Color(0.4f, 0.8f, 1f));
     }
 
+    // Холод ледяных врагов: герой бегает почти вдвое медленнее.
+    public float chillT;
+    public void Chill(float t)
+    {
+        if (chillT <= 0f) HUD.Float(transform.position + Vector3.up * 2.5f, "Холод!", new Color(0.6f, 0.85f, 1f));
+        chillT = Mathf.Max(chillT, t);
+    }
+
     // Снаряды врагов.
     public void OnSpellHit(SpellHit h)
     {
@@ -335,6 +348,7 @@ public class PlayerController : MonoBehaviour, ISpellTarget
             return;
         }
         Hurt(h.damage, h.dir * 3f);
+        if (h.source != null && h.source.TryGetComponent<Enemy>(out var en) && en.Chills) Chill(1.6f);
     }
 
     // Ближние атаки и площадные удары. Возвращает true, если удар прошёл.

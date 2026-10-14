@@ -126,7 +126,12 @@ public class SpellCaster : MonoBehaviour
         shield.SetActive(ShieldActive);
         if (!canCast || ShieldActive) return;
 
-        if (Input.GetMouseButton(0) && basicCd <= 0) CastBasic();
+        if (Input.GetMouseButton(0) && basicCd <= 0)
+        {
+            // В Акцио-тире ЛКМ — быстрое Акцио.
+            if (AccioRange.Active != null && Knows(SpellType.Accio)) CastAccioQuick();
+            else CastBasic();
+        }
         for (int i = 0; i < 4; i++)
             if (Input.GetKeyDown(Keys[i]))
             {
@@ -303,6 +308,14 @@ public class SpellCaster : MonoBehaviour
     }
 
     // Для автотеста: кастуем без ввода.
+    public void CastAccioQuick()
+    {
+        basicCd = 0.55f;
+        var s = Slot(SpellType.Accio);
+        s.cd = 0f;
+        TryCast(s);
+    }
+
     public void DebugCast(SpellType t)
     {
         if (t == SpellType.Basic) { CastBasic(); return; }

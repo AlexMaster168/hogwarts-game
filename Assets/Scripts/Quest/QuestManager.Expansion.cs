@@ -16,6 +16,7 @@ public partial class QuestManager
     GameObject clue;
     public string InteractionHint()
     {
+        if(HorrorActive)return HorrorHint();
         if(Chapter3Active)return HintCh3();
         if(!ExtensionActive)return null;
         if(step==Step.Archive||step==Step.KitchenLetter||step==Step.Seals)
@@ -73,6 +74,7 @@ public partial class QuestManager
     }
     public bool InteractExtension()
     {
+        if(HorrorActive)return InteractHorror();
         if(Chapter3Active)return InteractCh3();
         if(InteractionHint()==null)return false;
         if(clue!=null)Destroy(clue);

@@ -465,6 +465,9 @@ public class HUD : MonoBehaviour
         // Подсказка "поговорить".
         if (pc.nearbyNpc != null && GameState.Playing)
             Text(new Rect(0, H * 0.64f, W, 40 * S), (pc.nearbyNpc.shopId != null && pc.nearbyNpc.id != q.talkTarget ? "[E] Торговать — " : "[E] Говорить — ") + pc.nearbyNpc.displayName, sMed, Gold, TextAnchor.MiddleCenter);
+        else if (LockedVault.Nearby(pc.transform.position) != null && GameState.Playing)
+            Text(new Rect(0, H * 0.64f, W, 40 * S), pc.alohomora ? "[E] Алохомора — открыть дверь" : "Заперто — нужна Алохомора", sMed,
+                pc.alohomora ? Gold : new Color(1f, 0.6f, 0.4f), TextAnchor.MiddleCenter);
         else if (pc.nearbyChest != null && GameState.Playing)
             Text(new Rect(0, H * 0.64f, W, 40 * S), "[E] Открыть сундук", sMed, Gold, TextAnchor.MiddleCenter);
 

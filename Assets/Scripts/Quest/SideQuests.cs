@@ -53,6 +53,12 @@ public class SideQuests : MonoBehaviour
         new(100, 12, 140), new(140, 15, 168), new(178, 18, 130), new(168, 14, 85), new(128, 10, 72), new(96, 12, 102),
     };
 
+    // Лунные статуэтки для смотрителя Муна: Хогсмид, руины и берег озера.
+    public static readonly Vector3[] StatueSpots =
+    {
+        WorldBuilder.HogsmeadeCenter + new Vector3(4, 0.6f, 9), WorldBuilder.RuinsCenter + new Vector3(8, 0.6f, -4), WorldBuilder.LakeCenter + new Vector3(88, 0.6f, -6),
+    };
+    public readonly List<Pickup> statues = new();
     public readonly List<Pickup> herbs = new();
     public readonly List<BroomRing> race = new();
     public int raceIdx;
@@ -62,6 +68,7 @@ public class SideQuests : MonoBehaviour
     public void RestoreCompleted(SaveEntry[] completed)
     {
         foreach(var h in herbs)if(h!=null)Destroy(h.gameObject);herbs.Clear();
+        foreach(var h in statues)if(h!=null)Destroy(h.gameObject);statues.Clear();
         race.Clear();crypt.Clear();raceRunning=false;tracked=null;
         foreach(var q in all)
         {
@@ -100,6 +107,13 @@ public class SideQuests : MonoBehaviour
 
     void Define()
     {
+        const string Moon = "Смотритель Мун";
+        Add("moon_alohomora", "moon", Moon, "Лунные статуэтки", "Найди 3 лунные статуэтки: в Хогсмиде, в руинах и на берегу озера", QuestManager.Step.MeetHecat, 3, 100,
+            new[] { new Line(Moon, "Смотритель Мун. Слежу, чтобы студенты не совали нос куда не надо."),
+                    new Line(Moon, "По округе стоят старые хранилища на замках. Открыть их может только Алохомора."),
+                    new Line(Moon, "Я научу тебя, если вернёшь мои лунные статуэтки: одна в Хогсмиде, одна в руинах, одна на берегу озера.") },
+            new[] { new Line(Moon, "Все три! Ну что ж, уговор есть уговор. Смотри: палочку к замку, чётко — «Алохомора»."),
+                    new Line(Moon, "Хранилища отмечены на карте оранжевым. Только не говори директору, что это я тебя научил.") });
         const string Hec = "Профессор Гекат", Sh = "Профессор Шарп", Ga = "Профессор Гарлик", Ro = "Профессор Ронен", Ko = "Мадам Когава", Fi = "Профессор Фиг", Se = "Себастьян";
         Add("hecat_duel", "hecat", Hec, "Дуэльная практика", "Победи 8 тёмных магов", QuestManager.Step.Rings, 8, 200,
             new[] { new Line(Hec, "Манекены — это детский сад. Настоящая практика — тёмные маги в окрестностях."),
@@ -183,6 +197,10 @@ public class SideQuests : MonoBehaviour
             case "kogawa_race":
                 SpawnRace();
                 break;
+            case "moon_alohomora":
+                foreach (var p in StatueSpots)
+                    statues.Add(Pickup.Spawn(p, new Color(0.75f, 0.85f, 1f), 0.5f, 2.2f, h => { statues.Remove(h); Progress(Q("moon_alohomora"), 1); }));
+                break;
             case "seb_crypt":
                 crypt.Clear();
                 var kinds = new[] { EnemyKind.DarkWizard, EnemyKind.DarkWizard, EnemyKind.Spider, EnemyKind.Spider, EnemyKind.DarkWizard };
@@ -221,6 +239,12 @@ public class SideQuests : MonoBehaviour
         {
             if (P.caster.Knows(q.book.Value)) P.inventory.AddGold(300);
             else P.caster.Learn(q.book.Value);
+        }
+        if (q.id == "moon_alohomora")
+        {
+            P.alohomora = true;
+            rewards.Add("заклинание Алохомора");
+            SFX.Voice("Alohomora");
         }
         SFX.Play("victory", 0.7f);
         HUD.ShowToast($"Поручение выполнено: {q.title}! Награда: {string.Join(", ", rewards)}", new Color(0.5f, 1f, 0.6f));

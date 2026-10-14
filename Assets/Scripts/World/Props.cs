@@ -293,6 +293,8 @@ public class Chest : MonoBehaviour
     public static readonly List<Chest> All = new();
     public static event System.Action<Chest> Opened;
     public bool opened;
+    // Сундук в запертом хранилище: больше золота и всегда зелье.
+    public bool rich;
     Transform lid;
     float openT;
     public void RestoreOpened(bool value)
@@ -327,10 +329,10 @@ public class Chest : MonoBehaviour
         opened = true;
         Opened?.Invoke(this);
         SFX.Play("chest", 0.7f);
-        int gold = Random.Range(120, 360);
+        int gold = rich ? Random.Range(450, 700) : Random.Range(120, 360);
         Coin.Drop(transform.position + Vector3.up * 1.2f, gold);
         FX.Burst(transform.position + Vector3.up, new Color(1f, 0.85f, 0.4f), 40, 4f, 0.4f, 0.8f, -0.3f);
-        if (Random.value < 0.4f)
+        if (rich || Random.value < 0.4f)
         {
             string[] ids = { "wiggenweld", "rowan", "rowan", "maxima", "edurus", "focus", "invis", "thunder", "felix" };
             var id = ids[Random.Range(0, ids.Length)];

@@ -71,6 +71,7 @@ public static partial class WorldBuilder
         ShadyTent();
         DarkCamp();
         Chapter3();
+        HorrorSites();
         Random.state = state;
         StaticBatchingUtility.Combine(Root.gameObject);
     }
@@ -568,6 +569,8 @@ public static partial class WorldBuilder
         if ((Activities.SnitchStand - p).magnitude < 6) return true;
         if ((DarkCampPos - p).magnitude < 18) return true;
         if (BlockedCh3(p)) return true;
+        if (BlockedHorror(p)) return true;
+        foreach (var v in LockedVault.Spots) if ((v - p).magnitude < 7) return true;
         return false;
     }
 
@@ -602,6 +605,7 @@ public static partial class WorldBuilder
     static void Chests()
     {
         foreach (var p in ChestSpots) Chest.Spawn(p, Random.Range(0f, 360f));
+        LockedVault.BuildAll();
     }
 
     public static readonly Vector3 ShadyPos = new(202, 0, -181);

@@ -173,10 +173,10 @@ public partial class QuestManager
                 new Line(Hecat, "Говорят про оборотней и про браконьера Виктора Руквуда. Он торгует волшебными тварями."),
                 new Line(Hecat, "Натсай ждёт у Хогсмида. Будь осторожен: оборотни быстры, перекат спасёт тебе жизнь."));
         else if (step == Step.Epilogue)
-            Dialogue.Show(() => { SetStep(Step.Free); GameState.Set(GameMode.Victory); },
+            Dialogue.Show(() => SetStep(Step.Ch4Call),
                 new Line(Fig, "Руквуд в Азкабане, звери на свободе, а мёртвые снова спят."),
                 new Line(Fig, "Ты прошёл путь от новичка до защитника Хогвартса. Я горжусь тобой."),
-                new Line(Fig, "Отдыхай. Замок, Хогсмид и окрестности — всё твоё."));
+                new Line(Fig, "Но из экспедиции к старой часовне никто не вернулся. Гекат нашла в бумагах Руквуда имя: Звонарь."));
         return true;
     }
 }

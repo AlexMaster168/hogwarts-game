@@ -133,7 +133,7 @@ public partial class SmokeTest : MonoBehaviour
         Place(WorldBuilder.Spawn, new Vector3(0, 8, 0));
         yield return Shot("02_arrival");
 
-        float deadline = Time.realtimeSinceStartup + 900f;
+        float deadline = Time.realtimeSinceStartup + 1500f;
         while (GameState.Mode != GameMode.Victory && Time.realtimeSinceStartup < deadline)
         {
             if (GameState.Mode == GameMode.Dead)
@@ -156,6 +156,7 @@ public partial class SmokeTest : MonoBehaviour
 
         yield return SideQuestsTest();
         int sideDone = SideQuests.I.all.FindAll(s => s.state == SQState.Done).Count;
+        CheckLocation(p.alohomora, "Caretaker Moon taught Alohomora");
         yield return FeaturesTest();
         yield return UpgradesTest();
         yield return PatchTest();
@@ -225,6 +226,14 @@ public partial class SmokeTest : MonoBehaviour
                     {
                         if (h == null) continue;
                         p.Teleport(h.transform.position - Vector3.up);
+                        yield return Frames(4);
+                    }
+                    break;
+                case "moon_alohomora":
+                    foreach (var h in sq.statues.ToArray())
+                    {
+                        if (h == null) continue;
+                        p.Teleport(h.transform.position - Vector3.up * 0.6f);
                         yield return Frames(4);
                     }
                     break;
@@ -343,6 +352,7 @@ public partial class SmokeTest : MonoBehaviour
     IEnumerator DoStep()
     {
         if (q.ExtensionActive) { yield return ExtensionSteps(); yield break; }
+        if (q.HorrorActive) { yield return HorrorSteps(); yield break; }
         if (q.Chapter3Active) { yield return Chapter3Steps(); yield break; }
         switch (q.step)
         {

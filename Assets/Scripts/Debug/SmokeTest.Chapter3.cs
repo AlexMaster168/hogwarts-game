@@ -123,21 +123,31 @@ public partial class SmokeTest
         Destroy(dummy.gameObject);
         p.ancient = 0f;
 
-        // Галерея новых врагов для README.
+        // Галереи новых врагов для README.
+        yield return Gallery("enemies_chapter3", arena, 2.8f, 10f, EnemyKind.Werewolf, EnemyKind.Poacher, EnemyKind.Berserker, EnemyKind.Necromancer, EnemyKind.Rookwood);
+        yield return Gallery("enemies_veil", arena, 3.6f, 15f, EnemyKind.GraveHound, EnemyKind.Chorister, EnemyKind.Mourner, EnemyKind.Bellringer, EnemyKind.NamelessKing, EnemyKind.Gatekeeper);
+        yield return Gallery("enemies_chapter6", arena, 3.8f, 12f, EnemyKind.Vampire, EnemyKind.IceWraith, EnemyKind.Golem, EnemyKind.Mrax);
+        DayNight.I.SetHour(12f);
+        yield return Frames(2);
+    }
+
+    IEnumerator Gallery(string name, Vector3 arena, float step, float dist, params EnemyKind[] kinds)
+    {
         DayNight.I.SetHour(11f);
-        var kinds = new[] { EnemyKind.Werewolf, EnemyKind.Poacher, EnemyKind.Berserker, EnemyKind.Necromancer, EnemyKind.Rookwood };
+        foreach (var c in FindObjectsByType<Coin>(FindObjectsSortMode.None)) Destroy(c.gameObject);
         p.Teleport(arena + new Vector3(0, 0, -30));
+        float x0 = -step * (kinds.Length - 1) / 2f;
         for (int i = 0; i < kinds.Length; i++)
         {
-            var e = Enemy.Spawn(kinds[i], arena + new Vector3(-5.6f + i * 2.8f, 0.5f, 10), false);
-            CheckLocation(e != null && e.visual != null, "New enemy has a model: " + kinds[i]);
+            var e = Enemy.Spawn(kinds[i], arena + new Vector3(x0 + i * step, 0.5f, dist), false);
+            bool flying = kinds[i] is EnemyKind.Mourner or EnemyKind.IceWraith;
+            CheckLocation(e != null && (e.visual != null || flying), "New enemy has a model: " + kinds[i]);
             e.Stun(60f);
             e.transform.rotation = Quaternion.LookRotation(Vector3.back);
         }
         yield return Frames(10);
-        yield return ShotFrom("enemies_chapter3", arena + new Vector3(0, 2f, 0f), arena + new Vector3(0, 1.2f, 10));
+        yield return ShotFrom(name, arena + new Vector3(0, 2f + dist * 0.05f, 0f), arena + new Vector3(0, 1.4f + dist * 0.04f, dist));
         foreach (var e in Enemy.All.ToArray()) if (e != null) Destroy(e.gameObject);
-        DayNight.I.SetHour(12f);
         yield return Frames(2);
     }
 }

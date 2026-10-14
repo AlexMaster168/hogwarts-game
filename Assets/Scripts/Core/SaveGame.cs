@@ -15,8 +15,10 @@ using UnityEngine;
     public int day,level,xp,snitchWins,snitchGames,rorRuns;
     public float rorBest;
     public int[] cards,merlin,beasts;
-    public bool raining;
-    public bool broom,ancient,protego,female;
+    public bool raining, horrorComplete;
+    public bool broom,ancient,protego,female,alohomora;
+    public bool[] vaults;
+    public int matchWins,matchGames,accioBest,accioRuns;
     public int difficulty=1;
     public bool[] trials;
     public string[] spells,owned,visited;
@@ -47,10 +49,10 @@ public class SaveGame : MonoBehaviour
         var p=GameManager.I.player;var inv=p.inventory;var q=QuestManager.I;
         return new GameSave
         {
-            step=q.step.ToString(),house=q.house,pages=q.pages,gold=inv.galleons,earned=inv.earnedTotal,defeated=q.enemiesDefeated,
+            horrorComplete=q.horrorComplete,step=q.step.ToString(),house=q.house,pages=q.pages,gold=inv.galleons,earned=inv.earnedTotal,defeated=q.enemiesDefeated,
             herbs=RoomServices.I.herbs,seals=q.seals,position=p.transform.position,health=p.health.current,playTime=q.playTime,
             harvestRemaining=Mathf.Max(0,RoomServices.I.harvestReady-Time.time),mealRemaining=Mathf.Max(0,RoomServices.I.mealReady-Time.time),
-            broom=p.hasBroom,female=p.female,difficulty=Difficulty.Index,ancient=p.ancientUnlocked,protego=p.caster.protegoLearned,trials=Trials.I.done.ToArray(),
+            broom=p.hasBroom,female=p.female,alohomora=p.alohomora,vaults=LockedVault.All.Select(v=>v.open).ToArray(),difficulty=Difficulty.Index,ancient=p.ancientUnlocked,protego=p.caster.protegoLearned,trials=Trials.I.done.ToArray(),
             spells=p.caster.learned.Select(s=>s.type.ToString()).ToArray(),owned=inv.owned.ToArray(),visited=RoomServices.I.visited.ToArray(),
             potions=inv.potions.Select(x=>new SaveEntry{id=x.Key,count=x.Value}).ToArray(),
             equipped=inv.equipped.Select(x=>new SaveEntry{id=x.Value,count=(int)x.Key}).ToArray(),
@@ -58,6 +60,7 @@ public class SaveGame : MonoBehaviour
             cards=Activities.I.cards.ToArray(),merlin=Activities.I.merlin.ToArray(),beasts=Activities.I.beasts.ToArray(),
             snitchWins=Activities.I.snitchWins,snitchGames=Activities.I.snitchGames,rorRuns=Activities.I.rorRuns,rorBest=Activities.I.rorBest,
             level=Progression.I.level,xp=Progression.I.xp,hour=DayNight.I.hour,day=DayNight.I.day,raining=DayNight.I.raining,
+            matchWins=Activities.I.matchWins,matchGames=Activities.I.matchGames,accioBest=Activities.I.accioBest,accioRuns=Activities.I.accioRuns,
             openedChests=Chest.All.Where(c=>c.opened).Select(c=>c.transform.position).ToArray(),collectedPages=FieldGuidePage.Collected.ToArray()
         };
     }
@@ -121,8 +124,12 @@ public class SaveGame : MonoBehaviour
         for(int i=0;i<WorldBuilder.PageSpots.Length;i++)if(!FieldGuidePage.Collected.Contains(i))FieldGuidePage.Spawn(WorldBuilder.PageSpots[i]);
         foreach(var c in Chest.All)c.RestoreOpened((d.openedChests??Array.Empty<Vector3>()).Any(v=>Vector3.Distance(v,c.transform.position)<.1f));
         if(step>=QuestManager.Step.FigReveal)q.Npc("fig").transform.position=WorldBuilder.Courtyard+new Vector3(3,0,6);
+        q.horrorComplete=d.horrorComplete;
+        p.alohomora=d.alohomora;
+        for(int i=0;i<LockedVault.All.Count;i++)if(d.vaults!=null&&i<d.vaults.Length&&d.vaults[i]&&!LockedVault.All[i].open)LockedVault.All[i].Unlock(false);
         q.SetStep(step,false);q.RestoreSeals(d.seals);
         Activities.I.Restore(d.cards,d.merlin,d.beasts,d.snitchWins,d.snitchGames,d.rorRuns,d.rorBest);
+        Activities.I.matchWins=d.matchWins;Activities.I.matchGames=d.matchGames;Activities.I.accioBest=d.accioBest;Activities.I.accioRuns=d.accioRuns;
         if(d.day>0){DayNight.I.day=d.day;DayNight.I.SetHour(d.hour);DayNight.I.raining=d.raining;}
         // Partial objectives restart at their step; completed quests never pay again.
         p.Teleport(d.position);p.health.current=Mathf.Clamp(d.health,1,p.health.max);

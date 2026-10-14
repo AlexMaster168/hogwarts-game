@@ -321,6 +321,8 @@ public partial class SmokeTest
         CheckLocation(p.female && p.visual.name.Contains("witch"), "Load restores girl");
         p.SetGender(false);
         yield return DifficultyTest();
+        yield return VaultTest();
+        yield return GamesTest();
         Debug.Log($"HM_PATCH_RESULT errors={errors}");
     }
 

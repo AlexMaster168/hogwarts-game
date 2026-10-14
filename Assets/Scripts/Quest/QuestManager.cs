@@ -10,7 +10,10 @@ public partial class QuestManager : MonoBehaviour
     {
         MeetFig, Sorting, MeetHecat, Dummies, MeetSebastian, Duel, MeetKogawa, Rings,
         MeetNatsai, Ambush, GoForest, ForestFight, TakeRelic, FigReveal, Trials, FigVerdict, GoRuins, Boss, Aftermath, Archive, KitchenLetter, Convoy, Rescue, Seals, Rift, FinalReport,
-        Ch3Call, Werewolves, PoacherTrail, PoacherCamp, FreeBeasts, GoblinMine, Graveyard, FortressMarch, Rookwood, Epilogue, Free
+        Ch3Call, Werewolves, PoacherTrail, PoacherCamp, FreeBeasts, GoblinMine, Graveyard, FortressMarch, Rookwood, Epilogue, Free,
+        Ch4Call, Ch4Diary, Ch4Hunt, Ch4Witness, Ch4Crypt, Ch4Bell, Ch4Warden, Ch4Return,
+        Ch5Call, Ch5Gate, Ch5Shadows, Ch5Memory, Ch5Sentinel, Ch5Anchor, Ch5Procession, Ch5Sovereign, Ch5Return,
+        Ch6Call, Ch6Manor, Ch6Letter, Ch6Quarry, Ch6Ice, Ch6Map, Ch6Mrax, Ch6Return
     }
 
     public Step step;
@@ -49,6 +52,8 @@ public partial class QuestManager : MonoBehaviour
         ApplyModels();
         relic = Relic.Spawn(WorldBuilder.ForestClearing + Vector3.up * 1.9f);
         SetStep(Step.MeetFig, false);
+        if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-hmHorrorOnly") >= 0)
+            StartCoroutine(VerifyHorror());
     }
 
     void SpawnNpcs()
@@ -93,6 +98,8 @@ public partial class QuestManager : MonoBehaviour
             new Color(0.5f, 0.5f, 0.5f), Houses.Main[1], false, default, "Зельеварение — точная наука. Никаких махов палочкой.", "Не трогай котёл."));
         Add(NPC.Spawn("ronen", "Профессор Ронен", new Vector3(6, 0.12f, 42), new Color(0.3f, 0.15f, 0.35f), new Color(0.55f, 0.38f, 0.26f),
             new Color(0.1f, 0.1f, 0.1f), Houses.Main[2], false, default, "Заклинания — это искусство!", "Вингардиум Левиоса! Не Левиоса́, а Левио́са."));
+        Add(NPC.Spawn("moon", "Смотритель Мун", WorldBuilder.Courtyard + new Vector3(-8, 0, 2), new Color(0.3f, 0.25f, 0.18f), Figures.Skin,
+            new Color(0.5f, 0.5f, 0.5f), new Color(0.6f, 0.5f, 0.3f), false, default, "Не шуми в коридорах.", "Ключи? Какие ключи? Алохомора надёжнее."));
         Add(NPC.Spawn("garlick", "Профессор Гарлик", new Vector3(36, 0, -32), new Color(0.3f, 0.45f, 0.2f), Figures.Skin,
             new Color(0.6f, 0.35f, 0.15f), Houses.Main[3], false, default, "Мандрагоры сегодня особенно капризны.", "Береги уши у теплиц!"));
         for (int i = 0; i < 3; i++)
@@ -129,7 +136,7 @@ public partial class QuestManager : MonoBehaviour
         ["natsai"] = "casual_female", ["student0"] = "casual2_male", ["student1"] = "casual3_female", ["student2"] = "casual_male",
         ["student3"] = "casual2_female", ["villager0"] = "worker_male", ["villager1"] = "chef_male", ["villager2"] = "worker_female",
         ["pippin"] = "doctor_male_old", ["tomes"] = "oldclassy_female", ["spintwitches"] = "casual2_male", ["gladrags"] = "suit_female",
-        ["shady"] = "ninja_male", ["darkcamp"] = "rpg_rogue", ["darkgear"] = "witch", ["sharp"] = "doctor_male_young", ["ronen"] = "suit_male", ["garlick"] = "kimono_female",
+        ["shady"] = "ninja_male", ["darkcamp"] = "rpg_rogue", ["darkgear"] = "witch", ["sharp"] = "doctor_male_young", ["ronen"] = "suit_male", ["garlick"] = "kimono_female", ["moon"] = "worker_male",
         ["keeper_rackham"] = "oldclassy_male", ["keeper_bakar"] = "kimono_male", ["keeper_niamh"] = "witch",
         ["pupil0"] = "casual3_female", ["pupil1"] = "casual2_male", ["pupil2"] = "casual_female", ["pupil3"] = "casual_male",
     };
@@ -157,6 +164,7 @@ public partial class QuestManager : MonoBehaviour
 
     public void SetStep(Step s, bool announce = true)
     {
+        ClearHorrorEncounter();
         step = s;
         talkTarget = null;
         progress = "";
@@ -275,6 +283,12 @@ public partial class QuestManager : MonoBehaviour
             case Step.Ch3Call: case Step.Werewolves: case Step.PoacherTrail: case Step.PoacherCamp: case Step.FreeBeasts:
             case Step.GoblinMine: case Step.Graveyard: case Step.FortressMarch: case Step.Rookwood: case Step.Epilogue:
                 ConfigureCh3(s); break;
+            case Step.Ch4Call: case Step.Ch4Diary: case Step.Ch4Hunt: case Step.Ch4Witness:
+            case Step.Ch4Crypt: case Step.Ch4Bell: case Step.Ch4Warden: case Step.Ch4Return:
+            case Step.Ch5Call: case Step.Ch5Gate: case Step.Ch5Shadows: case Step.Ch5Memory:
+            case Step.Ch5Sentinel: case Step.Ch5Anchor: case Step.Ch5Procession: case Step.Ch5Sovereign: case Step.Ch5Return:
+            case Step.Ch6Call: case Step.Ch6Manor: case Step.Ch6Letter: case Step.Ch6Quarry: case Step.Ch6Ice: case Step.Ch6Map: case Step.Ch6Mrax: case Step.Ch6Return:
+                ConfigureHorror(s); break;
             case Step.Free:
                 title = "Свободная прогулка"; objective = "Исследуй мир и собери страницы путеводителя";
                 checkpoint = WorldBuilder.Courtyard;
@@ -322,6 +336,7 @@ public partial class QuestManager : MonoBehaviour
     void Update()
     {
         if (!GameState.Playing) return;
+        if (UpdateHorror()) return;
         playTime += Time.deltaTime;
         if (UpdateExtension()) return;
         if (UpdateCh3()) return;
@@ -444,6 +459,7 @@ public partial class QuestManager : MonoBehaviour
     public void Talk(NPC npc)
     {
         if (TalkExtension(npc)) return;
+        if (TalkHorror(npc)) return;
         if (TalkCh3(npc)) return;
         if (npc.id.StartsWith("keeper_"))
         {

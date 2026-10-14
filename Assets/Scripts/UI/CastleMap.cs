@@ -120,7 +120,7 @@ public class CastleMap : MonoBehaviour
             GUI.Label(new Rect(br.x+10,br.y,br.width-130,br.height),"Цель задания: "+qTitle+" — "+TabNames[tab+1],bs);
             if(tab!=level&&GUI.Button(new Rect(br.xMax-115,br.y+3,110,24),"Показать")){level=tab;pan=Vector2.zero;zoom=1;}
         }
-        GUI.Label(new Rect(25,Screen.height-50,Screen.width-50,45),"ЛКМ по помещению, голубой точке или любому месту окрестностей — выбрать · Колесо: масштаб · Правая кнопка: сдвиг\nГолубые точки — места перемещения, розовая — своя точка, зелёные — тёмные маги с непростительными заклинаниями.",small);
+        GUI.Label(new Rect(25,Screen.height-50,Screen.width-50,45),"ЛКМ по помещению, голубой точке или любому месту окрестностей — выбрать · Колесо: масштаб · Правая кнопка: сдвиг\nГолубые точки — места перемещения, розовая — своя точка, зелёные — тёмные маги с непростительными заклинаниями, оранжевые — запертые хранилища (Алохомора).",small);
         DrawList(pc);
     }
 
@@ -187,9 +187,12 @@ public class CastleMap : MonoBehaviour
             for(int i=0;i<Activities.MerlinSites.Length;i++)
                 WorldDot(Activities.I!=null&&Activities.I.merlin.Contains(i)?"Мерлин (пройдено)":"Мерлин",Activities.MerlinSites[i],area,world);
             WorldDot("Снитч",Activities.SnitchStand,area,world);
+            WorldDot("Квиддичный матч",Activities.MatchStand,area,world);
+            WorldDot("Акцио-тир",AccioRange.Stand,area,world);
             WorldDot("Дементоры (ночью)",NightSpawns.DementorShore,area,world);
             Dot(WorldBuilder.ShadyPos,area,world,Dark);
             Dot(WorldBuilder.DarkCampPos,area,world,Dark);
+            foreach(var v in LockedVault.All)Dot(v.transform.position,area,world,v.open?new Color(.55f,.55f,.55f):new Color(1f,.55f,.1f));
         }
         foreach(var l in CastleLocations.All)
         {

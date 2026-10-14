@@ -13,6 +13,10 @@ public class Activities : MonoBehaviour
     public readonly HashSet<int> beasts = new();
     public int snitchWins, snitchGames, rorRuns;
     public float rorBest;
+    public int matchWins, matchGames, accioBest, accioRuns;
+    public QuidditchMatch match;
+    public AccioRange accio;
+    public static Vector3 MatchStand => WorldBuilder.PitchCenter + new Vector3(9, 0, -30);
 
     public readonly List<WizardCard> cardObjs = new();
     public readonly List<MerlinStone> stones = new();
@@ -57,6 +61,8 @@ public class Activities : MonoBehaviour
         I = this;
         for (int i = 0; i < MerlinSites.Length; i++) stones.Add(MerlinStone.Spawn(i, MerlinSites[i]));
         BuildSnitchStand();
+        BuildStand(MatchStand, new Color(0.85f, 0.2f, 0.15f));
+        BuildStand(AccioRange.Stand, new Color(0.95f, 0.45f, 1f));
         Respawn();
     }
 
@@ -86,6 +92,19 @@ public class Activities : MonoBehaviour
         l.range = 6f;
         l.intensity = 1.5f;
     }
+
+    static void BuildStand(Vector3 p, Color c)
+    {
+        var g = new GameObject("Stand").transform;
+        g.SetParent(WorldBuilder.Dynamic, false);
+        g.position = p;
+        Prims.Cyl(g, Vector3.zero, 0.5f, 1.2f, MatLib.Solid(new Color(0.35f, 0.25f, 0.15f), 0.3f));
+        Prims.Sphere(g, Vector3.up * 1.5f, 0.5f, MatLib.Glow(c, 3f));
+        var l = g.gameObject.AddComponent<Light>();
+        l.type = LightType.Point; l.color = c; l.range = 6f; l.intensity = 1.5f;
+    }
+
+    public bool Busy => snitch != null || match != null || accio != null || (room != null && room.Active);
 
     // ---------------- прогресс ----------------
     public void CollectCard(int id)
@@ -134,10 +153,13 @@ public class Activities : MonoBehaviour
         if (I == null) return null;
         var pos = p.transform.position;
         if (I.room != null && I.room.Active) return null;
-        if (I.snitch != null) return null;
+        if (I.snitch != null || I.match != null || I.accio != null) return null;
         if ((pos - WorldBuilder.PensievePos).sqrMagnitude < 6.5f) return "[E] Заглянуть в Омут памяти";
         if ((pos - WorldBuilder.RoomOfRequirementPos).sqrMagnitude < 7f) return "[E] Испытание Выручай-комнаты";
         if ((pos - SnitchStand).sqrMagnitude < 9f) return p.hasBroom ? "[E] Ловля снитча против ловца Слизерина" : "Снитч: сначала получите метлу";
+        if ((pos - MatchStand).sqrMagnitude < 9f) return p.hasBroom ? "[E] Квиддичный матч 4 на 4 (2:30)" : "Квиддич: сначала получите метлу";
+        if ((pos - AccioRange.Stand).sqrMagnitude < 9f)
+            return p.caster.Knows(SpellType.Accio) ? $"[E] Акцио-тир: минута, рекорд {I.accioBest}" : "Акцио-тир: сначала выучите Акцио (книга в «Свитках и фолиантах»)";
         foreach (var s in I.stones)
             if (!s.done && !s.running && (pos - s.transform.position).sqrMagnitude < 9f) return "[E] Начать испытание Мерлина: " + s.Title;
         foreach (var b in I.beastObjs)
@@ -152,6 +174,8 @@ public class Activities : MonoBehaviour
         if ((pos - WorldBuilder.PensievePos).sqrMagnitude < 6.5f) { I.UsePensieve(); return true; }
         if ((pos - WorldBuilder.RoomOfRequirementPos).sqrMagnitude < 7f) { I.StartRoom(); return true; }
         if ((pos - SnitchStand).sqrMagnitude < 9f) { if (p.hasBroom) I.StartSnitch(); return true; }
+        if ((pos - MatchStand).sqrMagnitude < 9f) { if (p.hasBroom) I.StartMatch(); return true; }
+        if ((pos - AccioRange.Stand).sqrMagnitude < 9f) { if (p.caster.Knows(SpellType.Accio)) I.StartAccio(); return true; }
         foreach (var s in I.stones)
             if (!s.done && !s.running && (pos - s.transform.position).sqrMagnitude < 9f) { s.Begin(); return true; }
         foreach (var b in I.beastObjs.ToArray())
@@ -197,6 +221,56 @@ public class Activities : MonoBehaviour
         if (!p.onBroom) p.ToggleBroom();
         snitch = new GameObject("SnitchGame").AddComponent<SnitchGame>();
         snitchGames++;
+    }
+
+    public void StartMatch()
+    {
+        if (Busy) return;
+        var p = P;
+        p.Teleport(WorldBuilder.PitchCenter + new Vector3(-12, 8, 0));
+        if (!p.onBroom) p.ToggleBroom();
+        match = new GameObject("QuidditchMatch").AddComponent<QuidditchMatch>();
+        matchGames++;
+    }
+
+    public void QuidditchFinished(int us, int them)
+    {
+        match = null;
+        if (us > them)
+        {
+            matchWins++;
+            P.inventory.AddGold(400 + us * 5);
+            Progression.I.Gain(300);
+            SFX.Play("victory", 0.8f);
+            HUD.ShowToast($"Победа {us}:{them}! +{400 + us * 5} галлеонов", new Color(1f, 0.85f, 0.3f));
+        }
+        else
+        {
+            P.inventory.AddGold(us * 5);
+            Progression.I.Gain(us == them ? 120 : 60);
+            HUD.ShowToast(us == them ? $"Ничья {us}:{them}" : $"Поражение {us}:{them}. В следующий раз!", new Color(0.7f, 0.85f, 1f));
+        }
+    }
+
+    public void StartAccio()
+    {
+        if (Busy) return;
+        var p = P;
+        if (p.onBroom) p.ToggleBroom();
+        p.Teleport(AccioRange.Stand + new Vector3(2, 0.2f, -3));
+        accio = new GameObject("AccioRange").AddComponent<AccioRange>();
+    }
+
+    public void AccioFinished(int score, int pulled)
+    {
+        accio = null;
+        accioRuns++;
+        bool record = score > accioBest;
+        if (record) accioBest = score;
+        P.inventory.AddGold(score * 2);
+        Progression.I.Gain(score);
+        SFX.Play("victory", 0.6f);
+        HUD.ShowToast($"Акцио-тир: {score} очков, шаров {pulled}{(record ? " — новый рекорд!" : "")} +{score * 2} галлеонов", new Color(0.95f, 0.5f, 1f));
     }
 
     public void SnitchFinished(bool won)
@@ -269,6 +343,8 @@ public class Activities : MonoBehaviour
         if (hint != null && GameManager.I.player.nearbyNpc == null) Label(new Rect(0, H * 0.6f, W, 36), hint, sHint);
         string status = null;
         if (snitch != null) status = snitch.Status;
+        else if (match != null) status = match.Status;
+        else if (accio != null) status = accio.Status;
         else if (room != null && room.Active) status = room.Status;
         else foreach (var s in stones) if (s.running) status = s.Status;
         if (status != null) Label(new Rect(0, 108, W, 44), status, sBig);
@@ -303,7 +379,8 @@ public class Activities : MonoBehaviour
             sb.AppendLine($"  {BeastNames[s]}: {got}/3 — {where}");
         }
         sb.AppendLine();
-        sb.AppendLine($"КВИДДИЧ: поймано снитчей {snitchWins} из {snitchGames} (стойка у поля)");
+        sb.AppendLine($"КВИДДИЧ: поймано снитчей {snitchWins} из {snitchGames}, матчей выиграно {matchWins} из {matchGames} (стойки у поля)");
+        sb.AppendLine(accioRuns > 0 ? $"АКЦИО-ТИР: рекорд {accioBest} очков (тренировочный двор)" : "АКЦИО-ТИР: ещё не сыгран (тренировочный двор, нужно Акцио)");
         sb.AppendLine(rorRuns > 0 ? $"ВЫРУЧАЙ-КОМНАТА: пройдена {rorRuns} раз, рекорд {rorBest:0} с" : "ВЫРУЧАЙ-КОМНАТА: ещё не пройдена (2 этаж восточного крыла)");
         sb.AppendLine(p.caster.Knows(SpellType.Patronus) ? "ПАТРОНУС: изучен" : "ПАТРОНУС: не изучен — загляните в Омут памяти в кабинете директора");
         var q = QuestManager.I;
@@ -347,6 +424,8 @@ public class Activities : MonoBehaviour
         foreach (var x in b ?? new int[0]) if (x >= 0 && x < BeastSpots.Length) beasts.Add(x);
         snitchWins = wins; snitchGames = games; rorRuns = runs; rorBest = best;
         if (snitch != null) { Destroy(snitch.gameObject); snitch = null; }
+        if (match != null) { match.Abort(); match = null; }
+        if (accio != null) { accio.Abort(); accio = null; }
         if (room != null) room.Abort(false);
         foreach (var s in stones) s.Abort();
         Respawn();
