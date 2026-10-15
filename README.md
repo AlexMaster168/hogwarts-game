@@ -284,7 +284,7 @@ BuildGame.bat "D:\Unity\6000.0.77f1\Editor\Unity.exe"
 | --- | --- |
 | ![Гекат: украден осколок](docs/screenshots/story-ch6-call.jpg) | ![Вампиры у поместья Мракс](docs/screenshots/story-ch6-manor.jpg) |
 | ![Големы в каменоломне](docs/screenshots/story-ch6-golems.jpg) | ![Ледяные призраки](docs/screenshots/story-ch6-ice.jpg) |
-| ![Карта в инее](docs/screenshots/story-ch6-map.jpg) | ![Исольда Мракс на Утёсе ветров](docs/screenshots/story-ch6-mrax.jpg) |
+| ![Локации шестой главы на карте](docs/screenshots/ui-map-outskirts.png) | ![Исольда Мракс на Утёсе ветров](docs/screenshots/story-ch6-mrax.jpg) |
 
 После шестой главы появляется экран победы. Enter переводит в свободную прогулку. В старых сохранениях, где сюжет уже был пройден, глава IV начинается разговором с Гекат.
 
@@ -360,7 +360,7 @@ BuildGame.bat "D:\Unity\6000.0.77f1\Editor\Unity.exe"
 | | |
 | --- | --- |
 | ![Смотритель Мун](docs/screenshots/npc-moon.jpg) | ![Запертое хранилище](docs/screenshots/vault-locked.jpg) |
-| ![Алохомора открыла дверь](docs/screenshots/vault-open.jpg) | ![Хранилища на карте](docs/screenshots/ui-map-vaults.jpg) |
+| ![Алохомора открыла дверь](docs/screenshots/vault-open.jpg) | ![Хранилища на карте](docs/screenshots/ui-map-vaults.png) |
 
 <a id="locations"></a>
 ## Замок и окрестности
@@ -474,12 +474,12 @@ BuildGame.bat "D:\Unity\6000.0.77f1\Editor\Unity.exe"
 
 | | |
 | --- | --- |
-| ![Окрестности и перемещение](docs/screenshots/ui-map-travel.jpg) | ![Хогсмид](docs/screenshots/ui-map-hogsmeade.jpg) |
-| ![Значок задания](docs/screenshots/ui-map-quest-target.jpg) | ![Своя точка перемещения](docs/screenshots/ui-map-free-point.jpg) |
-| ![Первый этаж](docs/screenshots/ui-map-ground.jpg) | ![Второй этаж](docs/screenshots/ui-map-upper.jpg) |
-| ![Хранилища и места глав на карте](docs/screenshots/ui-map-vaults.jpg) | |
+| ![Окрестности и перемещение](docs/screenshots/ui-map-travel.png) | ![Хогсмид](docs/screenshots/ui-map-hogsmeade.png) |
+| ![Значок задания](docs/screenshots/ui-map-quest-target.png) | ![Своя точка перемещения](docs/screenshots/ui-map-free-point.png) |
+| ![Первый этаж](docs/screenshots/ui-map-ground.png) | ![Второй этаж](docs/screenshots/ui-map-upper.png) |
+| ![Подземелье](docs/screenshots/ui-map-basement.png) | ![Башня](docs/screenshots/ui-map-tower.png) |
 
-![Окрестности целиком](docs/screenshots/ui-map-outskirts.jpg)
+![Окрестности целиком](docs/screenshots/ui-map-outskirts.png)
 
 <a id="combat"></a>
 ## Бой и заклинания
