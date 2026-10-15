@@ -194,7 +194,7 @@ BuildGame.bat "D:\Unity\6000.0.77f1\Editor\Unity.exe"
 | | |
 | --- | --- |
 | ![Хроника Хранителей](docs/screenshots/story-archive.jpg) | ![Печать в обсерватории](docs/screenshots/story-seal-tower.jpg) |
-| ![Караван](docs/screenshots/story-convoy.jpg) | ![Пожиратель эха](docs/screenshots/story-final-boss.jpg) |
+| ![Караван](docs/screenshots/story-convoy.jpg) | ![Пожиратель эха](docs/screenshots/boss-echo.png) |
 
 ### Глава III. Охота Руквуда
 
@@ -574,6 +574,9 @@ BuildGame.bat "D:\Unity\6000.0.77f1\Editor\Unity.exe"
 
 ![Враги главы VI: вампир, ледяной призрак, каменный голем и Исольда Мракс](docs/screenshots/enemies-chapter6.jpg)
 
+| Пожиратель эха | Зеркало эха |
+| --- | --- |
+| ![Пожиратель эха у разлома](docs/screenshots/boss-echo.png) | ![Зеркальная фаза Пожирателя эха](docs/screenshots/boss-echo-mirror.png) |
 <a id="levels"></a>
 ## Уровни и опыт
 
