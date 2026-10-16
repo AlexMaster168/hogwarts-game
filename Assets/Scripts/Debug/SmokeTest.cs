@@ -88,6 +88,14 @@ public partial class SmokeTest : MonoBehaviour
         yield return Frames(30);
         yield return Shot("01_title");
         HUD.I.StartGame();
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmRoomsVisible") >= 0)
+        {
+            yield return RoomsVisibleTest();
+            foreach (var note in notes) Debug.Log("HM_SMOKE_NOTE " + note);
+            Debug.Log($"HM_ROOMS_VISIBLE_RESULT errors={errors} rooms={CastleLocations.All.Count} angles=8");
+            Application.Quit(errors == 0 ? 0 : 1);
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmBossPortraits") >= 0)
         {
             yield return BossPortraits();
