@@ -7,7 +7,9 @@ public enum EnemyKind
     // Акты IV–V: существа Завесы. Повадки — от базовых видов, но своя модель, имя и награды.
     GraveHound, Mourner, Chorister, Bellringer, Gatekeeper, NamelessKing,
     // Глава VI: вампиры, каменные големы, ледяные призраки и Исольда Мракс.
-    Vampire, Golem, IceWraith, Mrax
+    Vampire, Golem, IceWraith, Mrax,
+    // Глава II: Пожиратель эха — финальный босс второй главы, своя механика.
+    EchoDevourer, Ashling, RuneKnight, MirrorShade, StormWisp, AshQueen, BronzeWarden, MirrorRegent, StormArchivist
 }
 
 public class Enemy : MonoBehaviour, ISpellTarget
@@ -17,6 +19,10 @@ public class Enemy : MonoBehaviour, ISpellTarget
     // Базовый вид: по нему выбираются повадки и сопротивления.
     public EnemyKind Base => kind switch
     {
+        EnemyKind.Ashling => EnemyKind.Inferius,
+        EnemyKind.RuneKnight => EnemyKind.Berserker,
+        EnemyKind.MirrorShade or EnemyKind.StormWisp => EnemyKind.DarkWizard,
+        EnemyKind.AshQueen or EnemyKind.BronzeWarden or EnemyKind.MirrorRegent or EnemyKind.StormArchivist => EnemyKind.Rookwood,
         EnemyKind.GraveHound => EnemyKind.Werewolf,
         EnemyKind.Mourner => EnemyKind.Dementor,
         EnemyKind.Chorister => EnemyKind.Necromancer,
@@ -24,8 +30,12 @@ public class Enemy : MonoBehaviour, ISpellTarget
         EnemyKind.Gatekeeper => EnemyKind.Boss,
         _ => kind,
     };
-    public bool Heavy => Base is EnemyKind.Troll or EnemyKind.Boss or EnemyKind.Guardian or EnemyKind.Rookwood or EnemyKind.Berserker or EnemyKind.Golem or EnemyKind.Mrax;
-    public bool IsBossKind => Base is EnemyKind.Boss or EnemyKind.Rookwood or EnemyKind.Mrax;
+    public bool Heavy => Base is EnemyKind.Troll or EnemyKind.Boss or EnemyKind.Guardian or EnemyKind.Rookwood or EnemyKind.Berserker or EnemyKind.Golem or EnemyKind.Mrax or EnemyKind.EchoDevourer;
+    public bool IsBossKind => Base is EnemyKind.Boss or EnemyKind.Rookwood or EnemyKind.Mrax or EnemyKind.EchoDevourer;
+    // Зеркало эха: пока горит, заклинания героя возвращаются к нему.
+    public float mirrorT;
+    float mirrorCd = 6f, pullT, pullCd = 4f;
+    GameObject mirrorOrb;
     // Ледяные снаряды и волны замедляют героя.
     public bool Chills => kind is EnemyKind.IceWraith or EnemyKind.Mrax;
     // Исольда под каменным щитом, пока стоит хотя бы один её голем.
@@ -209,6 +219,14 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 hp = 170; e.speed = 4.2f; h = 2.4f; r = 0.5f; aim = 2.1f; name = "Ледяной призрак";
                 BuildDementor(e, new Color(0.55f, 0.8f, 0.95f, 0.75f), new Color(0.5f, 0.85f, 1f));
                 break;
+            case EnemyKind.EchoDevourer:
+                hp = 2000; e.speed = 3.4f; h = 4.2f; r = 0.9f; aim = 2.8f; name = "Пожиратель эха";
+                BuildDementor(e, new Color(0.15f, 0.45f, 0.5f, 0.85f), new Color(0.3f, 1f, 0.9f));
+                e.model.localScale = Vector3.one * 1.7f;
+                t.isBoss = true;
+                e.aura = go.AddComponent<Light>();
+                e.aura.type = LightType.Point; e.aura.color = new Color(0.3f, 1f, 0.9f); e.aura.range = 14f; e.aura.intensity = 2.2f;
+                break;
             case EnemyKind.Mrax:
                 hp = 2000; e.speed = 4.3f; h = 2.2f; r = 0.5f; aim = 1.6f; name = "Исольда Мракс";
                 e.parts = Figures.Humanoid(e.model, new Color(0.1f, 0.12f, 0.22f), Figures.Skin, new Color(0.85f, 0.85f, 0.9f), new Color(0.4f, 0.8f, 1f), true, new Color(0.08f, 0.1f, 0.2f), new Color(0.5f, 0.85f, 1f));
@@ -216,12 +234,22 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 e.aura = go.AddComponent<Light>();
                 e.aura.type = LightType.Point; e.aura.color = new Color(0.45f, 0.75f, 1f); e.aura.range = 11f; e.aura.intensity = 2f;
                 break;
+            case EnemyKind.Ashling: case EnemyKind.RuneKnight: case EnemyKind.MirrorShade: case EnemyKind.StormWisp:
+            case EnemyKind.AshQueen: case EnemyKind.BronzeWarden: case EnemyKind.MirrorRegent: case EnemyKind.StormArchivist:
+                hp = e.IsBossKind ? 2400f + ((int)kind - (int)EnemyKind.AshQueen) * 250f : 180f;
+                e.speed = kind == EnemyKind.RuneKnight ? 2.8f : 4.5f;
+                h = kind == EnemyKind.BronzeWarden ? 3.8f : 2.2f; r = 0.5f; aim = h * 0.7f;
+                name = SagaEnemy.Name(kind);
+                e.parts = Figures.Humanoid(e.model, SagaEnemy.Tint(kind), Figures.Skin, Color.black, SagaEnemy.Tint(kind), true);
+                t.isBoss = e.IsBossKind;
+                break;
             default:
                 hp = 70; e.speed = 3.6f; h = 1.8f; r = 0.4f; aim = 1.3f; name = "Тёмный маг";
                 e.parts = Figures.Humanoid(e.model, new Color(0.06f, 0.06f, 0.07f), new Color(0.78f, 0.78f, 0.76f), new Color(0.05f, 0.05f, 0.05f),
                     new Color(0.45f, 0.05f, 0.05f), true, new Color(0.06f, 0.06f, 0.07f), new Color(1f, 0.15f, 0.1f));
                 break;
         }
+        if (kind >= EnemyKind.Ashling) go.AddComponent<SagaEnemy>().enemy = e;
         e.goldDrop = kind switch
         {
             EnemyKind.Spider => Random.Range(32, 57),
@@ -246,6 +274,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
             EnemyKind.Golem => 320,
             EnemyKind.IceWraith => Random.Range(80, 121),
             EnemyKind.Mrax => 3500,
+            EnemyKind.EchoDevourer => 2400,
             _ => Random.Range(60, 105),
         };
         e.visual = kind switch
@@ -264,7 +293,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
             EnemyKind.Necromancer => CharacterVisual.Attach(e.model, "rpg_wizard", 1.9f, e.parts, true, new Color(0.45f, 0.75f, 0.5f)),
             EnemyKind.Rookwood => CharacterVisual.Attach(e.model, "rpg_rogue", 2.2f, e.parts, true, new Color(0.85f, 0.35f, 0.35f)),
             EnemyKind.GraveHound => CharacterVisual.Attach(e.model, "ninja_male", 1.9f, e.parts, false, new Color(0.45f, 0.6f, 0.5f)),
-            EnemyKind.Mourner or EnemyKind.IceWraith => null,
+            EnemyKind.Mourner or EnemyKind.IceWraith or EnemyKind.EchoDevourer => null,
             EnemyKind.Chorister => CharacterVisual.Attach(e.model, "rpg_wizard", 1.9f, e.parts, true, new Color(0.95f, 0.92f, 0.82f)),
             EnemyKind.Bellringer => CharacterVisual.Attach(e.model, "kimono_male", 2.4f, e.parts, true, new Color(0.8f, 0.55f, 0.3f)),
             EnemyKind.NamelessKing => CharacterVisual.Attach(e.model, "rpg_wizard", 2.7f, e.parts, true, new Color(0.45f, 0.3f, 0.65f)),
@@ -272,6 +301,11 @@ public class Enemy : MonoBehaviour, ISpellTarget
             EnemyKind.Vampire => CharacterVisual.Attach(e.model, "suit_male", 1.85f, e.parts, false, new Color(0.85f, 0.75f, 0.85f)),
             EnemyKind.Golem => CharacterVisual.Attach(e.model, "giant", 3.9f, null, false, new Color(0.55f, 0.55f, 0.58f)),
             EnemyKind.Mrax => CharacterVisual.Attach(e.model, "witch", 2.2f, e.parts, true, new Color(0.6f, 0.75f, 1f)),
+            EnemyKind.BronzeWarden => CharacterVisual.Attach(e.model, "giant", 3.8f, e.parts, false, SagaEnemy.Tint(kind)),
+            EnemyKind.AshQueen => CharacterVisual.Attach(e.model, "witch", 2.2f, e.parts, true, SagaEnemy.Tint(kind)),
+            EnemyKind.MirrorRegent => CharacterVisual.Attach(e.model, "suit_male", 2.2f, e.parts, true, SagaEnemy.Tint(kind)),
+            EnemyKind.StormArchivist => CharacterVisual.Attach(e.model, "rpg_wizard", 2.2f, e.parts, true, SagaEnemy.Tint(kind)),
+            EnemyKind.Ashling or EnemyKind.RuneKnight or EnemyKind.MirrorShade or EnemyKind.StormWisp => CharacterVisual.Attach(e.model, kind == EnemyKind.RuneKnight ? "goblin_male" : "rpg_rogue", 2.2f, e.parts, true, SagaEnemy.Tint(kind)),
             _ => CharacterVisual.Attach(e.model, "rpg_rogue", 1.8f, e.parts, true, new Color(0.45f, 0.4f, 0.5f)),
         };
         cc.height = h;
@@ -319,6 +353,16 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 break;
             case EnemyKind.Vampire:
                 FX.Loop(e.model, Vector3.up * 1.2f, new Color(0.35f, 0.02f, 0.06f, 0.35f), 6, 0.35f, 1.2f);
+                break;
+            case EnemyKind.EchoDevourer:
+                // Золотая маска и три светящихся «голоса» вокруг головы.
+                Prims.Sphere(e.model, new Vector3(0, 2.4f, 0.32f), 0.34f, MatLib.Glow(new Color(1f, 0.8f, 0.35f), 2.5f));
+                for (int i = 0; i < 3; i++)
+                {
+                    var d = Quaternion.Euler(0, i * 120f, 0) * Vector3.forward * 0.95f;
+                    Prims.Sphere(e.model, new Vector3(d.x, 2.7f, d.z), 0.22f, MatLib.Glow(new Color(0.4f, 1f, 0.9f), 3f));
+                }
+                FX.Loop(e.model, Vector3.up * 0.6f, new Color(0.3f, 1f, 0.85f, 0.35f), 16, 0.5f, 1.2f);
                 break;
             case EnemyKind.Mrax:
                 for (int i = 0; i < 3; i++)
@@ -554,6 +598,51 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 {
                     if (dist < 6f) { attackKind = 16; telegraphT = 0.9f; attackCd = 3f; ThreatSense.Warn(true, 1f); }
                     else if (dist < 36f) { attackKind = 15; telegraphT = 0.6f; attackCd = Random.Range(2.2f, 3f); ThreatSense.Warn(false, 0.6f + dist / 20f); }
+                }
+                break;
+            }
+            case EnemyKind.EchoDevourer:
+            {
+                int phase = health.Frac > 0.66f ? 1 : health.Frac > 0.33f ? 2 : 3;
+                if (mirrorT > 0f) mirrorT -= dt;
+                mirrorCd -= dt;
+                if (phase >= 2 && mirrorCd <= 0f && mirrorT <= 0f)
+                {
+                    mirrorT = 3f;
+                    mirrorCd = phase == 3 ? 9f : 12f;
+                    HUD.ShowToast("Зеркало эха! Не бей 3 секунды — удар вернётся к тебе. Протего защищает", new Color(0.4f, 1f, 0.9f));
+                    SFX.Play("shield", 0.7f);
+                }
+                if (mirrorOrb == null)
+                    mirrorOrb = Prims.Sphere(transform, Vector3.up * cc.height * 0.55f, cc.height * 1.5f, MatLib.Fade(new Color(0.4f, 1f, 0.9f, 0.3f), 2.5f, 0.95f));
+                mirrorOrb.SetActive(mirrorT > 0f);
+                // Третья фаза: затягивает героя к себе.
+                pullCd -= dt;
+                if (phase >= 3 && pullCd <= 0f && pullT <= 0f)
+                {
+                    pullT = 2.2f;
+                    pullCd = 8f;
+                    HUD.ShowToast("Пожиратель затягивает голоса! Беги прочь", new Color(0.4f, 1f, 0.9f));
+                }
+                if (pullT > 0f)
+                {
+                    pullT -= dt;
+                    if (dist > 2.5f && !P.onBroom) P.cc.Move(-dirTo * 5.5f * dt);
+                    FX.Burst(P.transform.position + Vector3.up, new Color(0.4f, 1f, 0.9f), 2, 3f, 0.25f, 0.4f, 0f);
+                }
+                strafeT -= dt;
+                if (strafeT <= 0f) { strafeT = Random.Range(1.5f, 3f); strafeDir = Random.value < 0.5f ? -1f : 1f; }
+                var side = new Vector3(dirTo.z, 0, -dirTo.x);
+                desired = side * strafeDir * speed * 0.6f;
+                if (dist > 16f) desired += dirTo * speed;
+                else if (dist < 8f && pullT <= 0f) desired -= dirTo * speed * 0.6f;
+                if (attackCd <= 0f)
+                {
+                    float rv = Random.value;
+                    if (dist < 9f && rv < 0.5f) { attackKind = 17; telegraphT = 1.1f; ThreatSense.Warn(true, 1.2f); }
+                    else if (phase >= 3 && rv < 0.75f) { attackKind = 6; telegraphT = 0.8f; ThreatSense.Warn(true, 2.2f); }
+                    else { attackKind = 18; telegraphT = 0.7f; ThreatSense.Warn(false, 0.7f + dist / 20f); }
+                    attackCd = phase == 3 ? 1.6f : phase == 2 ? 2.1f : 2.6f;
                 }
                 break;
             }
@@ -845,6 +934,17 @@ public class Enemy : MonoBehaviour, ISpellTarget
                 SFX.Play("heavy", 0.5f);
                 if (dist < 3.8f) P.ReceiveMelee(24f, false, this, dirTo * 8f);
                 break;
+            case 17:
+                // Крик Пожирателя: волна вокруг, щит не держит.
+                FX.Shockwave(transform.position, new Color(0.4f, 1f, 0.9f), 9f);
+                FX.Flash(transform.position + Vector3.up * 2f, new Color(0.4f, 1f, 0.9f), 5f, 18f);
+                SFX.Play("boom", 0.7f);
+                GameManager.I.camRig.Shake(0.3f);
+                if (dist < 9f) P.ReceiveMelee(26f, true, this, dirTo * 9f + Vector3.up * 3f);
+                break;
+            case 18:
+                for (int i = -2; i <= 2; i++) FireBolt(false, i * 10f, new Color(0.4f, 1f, 0.9f));
+                break;
             case 13:
                 // Укус вампира: восстанавливает ему здоровье.
                 knock = dirTo * 6f;
@@ -1024,6 +1124,8 @@ public class Enemy : MonoBehaviour, ISpellTarget
     public void OnSpellHit(SpellHit h)
     {
         if (IsDead) return;
+        var sagaEnemy = GetComponent<SagaEnemy>();
+        if (sagaEnemy != null && !sagaEnemy.Accept(ref h)) return;
         aggro = true;
         float dmg = h.damage;
         var src = P;
@@ -1036,6 +1138,10 @@ public class Enemy : MonoBehaviour, ISpellTarget
         var flatDir = new Vector3(h.dir.x, 0, h.dir.z).normalized;
         switch (h.type)
         {
+            case SpellType.Aguamenti: burnT = 0f; if (kind == EnemyKind.Ashling || kind == EnemyKind.AshQueen) dmg *= 2f; break;
+            case SpellType.Reducto: if (kind == EnemyKind.RuneKnight || kind == EnemyKind.BronzeWarden || kind == EnemyKind.Golem) dmg *= 1.8f; knock = flatDir * (heavy ? 3f : 12f); break;
+            case SpellType.Incarcerous: Stun(heavy ? 0.8f : 4f); break;
+            case SpellType.Rictusempra: Stun(heavy ? 0.6f : 2.8f); break;
             case SpellType.Incendio: burnT = kind is EnemyKind.Inferius or EnemyKind.IceWraith ? 5f : 3f; break;
             case SpellType.Confringo: burnT = kind is EnemyKind.Inferius or EnemyKind.IceWraith ? 5f : 3f; break;
             case SpellType.Diffindo:
@@ -1134,6 +1240,20 @@ public class Enemy : MonoBehaviour, ISpellTarget
                     resistHint = Time.time + 4f;
                     HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1.8f), "Камень! Нужны Бомбарда, Конфринго или Депульсо", new Color(1f, 0.7f, 0.4f));
                 }
+            }
+        }
+        if (mirrorT > 0f && fromPlayer && h.type != SpellType.Ancient)
+        {
+            dmg *= 0.25f;
+            if (!src.caster.ShieldActive)
+            {
+                src.ReceiveMelee(Mathf.Max(4f, h.damage * 0.35f), true, null, -flatDir * 4f);
+                FX.Burst(src.transform.position + Vector3.up * 1.2f, new Color(0.4f, 1f, 0.9f), 20, 4f, 0.3f, 0.5f);
+            }
+            if (Time.time > resistHint)
+            {
+                resistHint = Time.time + 1.5f;
+                HUD.Float(transform.position + Vector3.up * (targetable.aimHeight + 1.8f), "Эхо отражает удар!", new Color(0.4f, 1f, 0.9f));
             }
         }
         if (Shielded && h.type != SpellType.Ancient)
@@ -1326,7 +1446,7 @@ public class Enemy : MonoBehaviour, ISpellTarget
             wasTelegraph = tel;
         }
         float bob = moveMag > 0.5f ? Mathf.Abs(Mathf.Sin(animT * 8f)) * 0.06f : 0f;
-        if (Base == EnemyKind.Dementor || kind == EnemyKind.IceWraith)
+        if (Base == EnemyKind.Dementor || kind == EnemyKind.IceWraith || kind == EnemyKind.EchoDevourer)
         {
             model.localPosition = Vector3.up * (0.6f + Mathf.Sin(animT * 1.7f) * 0.25f);
             model.localRotation = Quaternion.Euler(telegraphT > 0f ? 25f : 6f, 0, Mathf.Sin(animT * 1.3f) * 6f);

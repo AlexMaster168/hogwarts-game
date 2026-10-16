@@ -51,7 +51,7 @@ public partial class QuestManager
             if(step==before)break;
             stages++;
         }
-        check(stages==25 && step==Step.Free,"25 stages reach Free");
+        check(stages==25 && step==Step.Ch7Call,"25 stages reach chapter 7");
         yield return null;
         check(horrorEnemies.Count==0,"owned enemies cleaned");
         check(horrorComplete,"completion flag");
@@ -60,7 +60,7 @@ public partial class QuestManager
         horrorComplete=false;
         check(SaveGame.Load(),"load completed story");
         for(int i=0;i<8;i++)yield return null;
-        check(horrorComplete&&step==Step.Free,"completion restored");
+        check(horrorComplete&&step==Step.Ch7Call,"completion restored before chapter 7");
         GameState.Set(GameMode.Paused);
         Debug.Log($"HM_HORROR_RESULT errors={errors} stages={stages} step={step} difficulty={Difficulty.Index}");
         Application.Quit(errors==0?0:1);

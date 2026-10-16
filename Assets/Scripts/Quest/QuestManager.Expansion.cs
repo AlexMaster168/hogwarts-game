@@ -16,6 +16,7 @@ public partial class QuestManager
     GameObject clue;
     public string InteractionHint()
     {
+        if(SagaActive)return SagaHint();
         if(HorrorActive)return HorrorHint();
         if(Chapter3Active)return HintCh3();
         if(!ExtensionActive)return null;
@@ -54,8 +55,7 @@ public partial class QuestManager
             case Step.Rift:
                 title="Сердце разлома";objective="Победи Пожирателя эха. Протего и Древняя магия помогут!";
                 Marker(RiftPos);checkpoint=RiftPos+Vector3.back*22;
-                boss=Enemy.Spawn(EnemyKind.Boss,RiftPos+Vector3.up*.3f);
-                boss.health.Init(2000);boss.targetable.displayName="Пожиратель эха";boss.goldDrop=2400;
+                boss=Enemy.Spawn(EnemyKind.EchoDevourer,RiftPos+Vector3.up*.3f);
                 boss.Died+=_=>
                 {
                     foreach(var e in Enemy.All.ToArray())if(e!=null&&!e.IsDead)e.Kill();
@@ -74,6 +74,7 @@ public partial class QuestManager
     }
     public bool InteractExtension()
     {
+        if(SagaActive)return InteractSaga();
         if(HorrorActive)return InteractHorror();
         if(Chapter3Active)return InteractCh3();
         if(InteractionHint()==null)return false;

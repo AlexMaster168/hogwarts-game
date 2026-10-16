@@ -10,6 +10,8 @@ public class CameraRig : MonoBehaviour
     Vector3 pivot;
     float dist = 5f, shake;
     bool init;
+    readonly RaycastHit[] obstacles = new RaycastHit[96];
+    float clearDistance = 5f, distanceVelocity;
 
     public Vector3 Forward => transform.forward;
     public Vector3 Right => transform.right;
@@ -65,16 +67,30 @@ public class CameraRig : MonoBehaviour
         var offset = rot * new Vector3(0.6f, 0.2f, -dist);
         var dir = offset.normalized;
         float len = offset.magnitude;
-        foreach (var h in Physics.SphereCastAll(pivot, 0.25f, dir, len, ~0, QueryTriggerInteraction.Ignore))
+        int hits = Physics.SphereCastNonAlloc(pivot, 0.25f, dir, obstacles, len, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < hits; i++)
         {
+            var h = obstacles[i];
             if (h.collider is CharacterController || h.collider.transform.IsChildOf(target)) continue;
             if (h.collider.GetComponentInParent<NPC>() != null) continue;
+            if (h.collider.bounds.size.y < 0.3f) continue;
             if (h.distance > 0f && h.distance < len) len = h.distance;
         }
         len = Mathf.Max(len, 0.5f);
+        // Стена приближает камеру сразу, выход из проёма отдаляет плавно.
+        if (len < clearDistance) { clearDistance = len; distanceVelocity = 0f; }
+        else clearDistance = Mathf.SmoothDamp(clearDistance, len, ref distanceVelocity, 0.22f, 30f, dt);
+        len = clearDistance;
 
-        shake = Mathf.MoveTowards(shake, 0, dt * 1.5f);
-        var jitter = shake > 0 ? Random.insideUnitSphere * shake * 0.4f : Vector3.zero;
+        // Тряска плавная (шум Перлина) и небольшая: случайный сдвиг каждый кадр выглядел как вибрация картинки.
+        shake = Mathf.MoveTowards(shake, 0, dt * 2f);
+        Vector3 jitter = Vector3.zero;
+        if (shake > 0f)
+        {
+            float tt = Time.unscaledTime * 14f;
+            jitter = new Vector3(Mathf.PerlinNoise(tt, 0.3f) - 0.5f, Mathf.PerlinNoise(0.7f, tt) - 0.5f, 0f) * (shake * 0.22f);
+            jitter = rot * jitter;
+        }
         transform.SetPositionAndRotation(pivot + dir * len + jitter, rot);
     }
 }

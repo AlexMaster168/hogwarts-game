@@ -4,7 +4,8 @@ using UnityEngine;
 public enum SpellType
 {
     Basic, Incendio, Levioso, Depulso, Confringo, Ancient, Stupefy, EnemyBolt, EnemyCurse,
-    Expelliarmus, Accio, Diffindo, Glacius, Bombarda, Imperio, Crucio, AvadaKedavra, Patronus, Arresto
+    Expelliarmus, Accio, Diffindo, Glacius, Bombarda, Imperio, Crucio, AvadaKedavra, Patronus, Arresto,
+    Lumos, Reparo, Aguamenti, Reducto, Incarcerous, Rictusempra
 }
 
 public struct SpellHit

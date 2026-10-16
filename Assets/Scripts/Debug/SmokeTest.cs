@@ -88,6 +88,53 @@ public partial class SmokeTest : MonoBehaviour
         yield return Frames(30);
         yield return Shot("01_title");
         HUD.I.StartGame();
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmSagaOnly") >= 0)
+        {
+            yield return SagaTest();
+            foreach (var note in notes) Debug.Log("HM_SMOKE_NOTE " + note);
+            Debug.Log($"HM_SAGA_RESULT errors={errors} complete={q.sagaComplete} step={q.step}");
+            Application.Quit(errors == 0 && q.sagaComplete ? 0 : 1);
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmEchoOnly") >= 0)
+        {
+            q.SetStep(QuestManager.Step.Free, false);
+            yield return EchoTest();
+            foreach (var note in notes) Debug.Log("HM_SMOKE_NOTE " + note);
+            Debug.Log($"HM_ECHO_RESULT errors={errors}");
+            Application.Quit(errors == 0 ? 0 : 1);
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmMapsOnly") >= 0)
+        {
+            GameState.Set(GameMode.Play);
+            DayNight.I.raining = false;
+            DayNight.I.SetHour(11f);
+            p.Teleport(WorldBuilder.Courtyard + Vector3.up * 0.3f);
+            CastleMap.I.Open();
+            int[] floors = { -1, 0, 1, 2, 3, 4 };
+            string[] names = { "ui-map-basement", "ui-map-ground", "ui-map-upper", "ui-map-tower", "ui-map-outskirts", "ui-map-hogsmeade" };
+            for (int i = 0; i < floors.Length; i++)
+            {
+                CastleMap.I.level = floors[i];
+                yield return Shot(names[i]);
+            }
+            CastleMap.I.level = 3;
+            yield return Shot("ui-map-vaults");
+            CastleMap.I.SelectPoint(new Vector3(150, 0, 40));
+            yield return Shot("ui-map-free-point");
+            yield return Shot("ui-map-travel");
+            CastleMap.I.selectedPoint = null;
+            CastleMap.I.selected = -1;
+            CastleMap.I.target = null;
+            q.SetStep(QuestManager.Step.MeetFig, false);
+            GameState.Set(GameMode.Map);
+            yield return Shot("ui-map-quest-target");
+            CastleMap.I.Close();
+            Debug.Log($"HM_MAPS_RESULT errors={errors} views=10");
+            Application.Quit(errors == 0 ? 0 : 1);
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmShowcase") >= 0)
         {
             yield return Showcase();
@@ -95,6 +142,7 @@ public partial class SmokeTest : MonoBehaviour
             Application.Quit(errors == 0 ? 0 : 1);
             yield break;
         }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmJitter") >= 0) { yield return JitterTest(); yield break; }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmPatchOnly") >= 0)
         {
             q.SetStep(QuestManager.Step.Free, false);
@@ -351,6 +399,7 @@ public partial class SmokeTest : MonoBehaviour
 
     IEnumerator DoStep()
     {
+        if (q.SagaActive) { yield return SagaStep(); yield break; }
         if (q.ExtensionActive) { yield return ExtensionSteps(); yield break; }
         if (q.HorrorActive) { yield return HorrorSteps(); yield break; }
         if (q.Chapter3Active) { yield return Chapter3Steps(); yield break; }

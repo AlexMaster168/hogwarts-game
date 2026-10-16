@@ -20,6 +20,7 @@ public class Inventory : MonoBehaviour
 
     public bool Invisible => invisT > 0f;
     public bool Focused => focusT > 0f;
+    public bool InfinitePotions => equipped.TryGetValue(ItemKind.Artifact, out var id) && id == "bottomless_satchel";
 
     public static readonly (string id, KeyCode key)[] PotionKeys =
     {
@@ -154,9 +155,9 @@ public class Inventory : MonoBehaviour
 
     public void UsePotion(string id)
     {
-        if (potionCd > 0 || potions[id] <= 0) return;
+        if (potionCd > 0 || (!InfinitePotions && potions[id] <= 0)) return;
         if ((id == "wiggenweld" || id == "rowan") && pc.health.current >= pc.health.max) return;
-        potions[id]--;
+        if (!InfinitePotions) potions[id]--;
         potionCd = 1f;
         var d = ItemDB.Get(id);
         switch (id)

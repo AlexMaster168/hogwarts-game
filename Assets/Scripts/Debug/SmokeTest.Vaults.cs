@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 
 // Запертые хранилища и Алохомора: без заклинания дверь не открыть, с ним — сундук с богатой наградой.
@@ -50,7 +51,25 @@ public partial class SmokeTest
         CastleMap.I.Open(); CastleMap.I.level = 3;
         yield return Frames(3);
         yield return Shot("ui_map_vaults");
+        // Снимок сверху действительно отрисован: на карте есть и вода, и трава, и камень.
+        var aer = MapArt.Aerial;
+        var lake = aer.GetPixelBilinear((WorldBuilder.LakeCenter.x - MapArt.World.xMin) / MapArt.World.width, (WorldBuilder.LakeCenter.z - MapArt.World.yMin) / MapArt.World.height);
+        var field = aer.GetPixelBilinear((120f - MapArt.World.xMin) / MapArt.World.width, (-40f - MapArt.World.yMin) / MapArt.World.height);
+        CheckLocation(aer.width == 2048 && field.g > lake.g + 0.1f && lake.b > field.b + 0.15f, $"Aerial map rendered: lake={lake} field={field}");
+        CastleMap.I.level = 0;
+        p.Teleport(WorldBuilder.Courtyard + Vector3.up * 0.3f);
+        yield return Frames(3);
+        yield return Shot("ui_map_castle");
         CastleMap.I.Close();
+        // Туман локаций — плоский стелющийся, без гигантских частиц, повёрнутых к камере.
+        bool bigBillboards = false;
+        foreach (var ps in FindObjectsByType<ParticleSystem>(FindObjectsSortMode.None))
+        {
+            var r = ps.GetComponent<ParticleSystemRenderer>();
+            if (r.renderMode == ParticleSystemRenderMode.Billboard && ps.main.loop && ps.main.startSize.constantMax > 3.1f) { bigBillboards = true; Debug.Log("HM_BIG_FX " + ps.transform.parent?.name); }
+        }
+        CheckLocation(!bigBillboards, "No huge camera-facing fog particles");
+        CheckLocation(FindObjectsByType<ParticleSystem>(FindObjectsSortMode.None).Count(ps => ps.name == "FX_Mist") >= 4, "Ground mist at story sites");
         p.alohomora = had;
         yield return Frames(2);
     }

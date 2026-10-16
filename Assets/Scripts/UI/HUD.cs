@@ -217,6 +217,19 @@ public class HUD : MonoBehaviour
         GUI.Label(r, s, st);
     }
 
+    // Текст над врагами: чёрная обводка со всех сторон, чтобы читался на ярком фоне (разломы, огонь).
+    void TextO(Rect r, string s, GUIStyle st, Color c, TextAnchor a = TextAnchor.MiddleCenter)
+    {
+        st.alignment = a;
+        float o = Mathf.Max(1f, 1.6f * S);
+        st.normal.textColor = new Color(0, 0, 0, c.a * 0.9f);
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+                if (dx != 0 || dy != 0) GUI.Label(new Rect(r.x + dx * o, r.y + dy * o, r.width, r.height), s, st);
+        st.normal.textColor = c;
+        GUI.Label(r, s, st);
+    }
+
     void Bar(Rect r, float frac, Color fill, Color back)
     {
         Box(r, back);
@@ -317,10 +330,10 @@ public class HUD : MonoBehaviour
             if (e != null && !e.aggro && t.health.Frac >= 1f) continue;
             if (!ToScreen(cam, t.AimPoint + Vector3.up * 0.95f, out var p)) continue;
             float w = 90 * S;
-            Text(new Rect(p.x - 120 * S, p.y - 32 * S, 240 * S, 26 * S), t.displayName, sTiny, new Color(1f, 0.85f, 0.8f), TextAnchor.MiddleCenter);
+            TextO(new Rect(p.x - 120 * S, p.y - 32 * S, 240 * S, 26 * S), t.displayName, sTiny, new Color(1f, 0.85f, 0.8f));
             Bar(new Rect(p.x - w / 2, p.y - 6 * S, w, 8 * S), t.health.Frac, new Color(0.85f, 0.15f, 0.12f), new Color(0, 0, 0, 0.6f));
             if (e != null && e.Telegraphing)
-                Text(new Rect(p.x - 30 * S, p.y - 80 * S, 60 * S, 50 * S), "!", sBig, e.TelegraphRed ? new Color(1f, 0.2f, 0.15f) : new Color(1f, 0.85f, 0.2f), TextAnchor.MiddleCenter);
+                TextO(new Rect(p.x - 30 * S, p.y - 80 * S, 60 * S, 50 * S), "!", sBig, e.TelegraphRed ? new Color(1f, 0.2f, 0.15f) : new Color(1f, 0.85f, 0.2f));
             string status = e == null ? null : e.Charmed ? "под Империо" : e.frozenT > 0f ? "заморожен" : e.crucioT > 0f ? "Круцио" : e.disarmT > 0f ? "обезоружен" : e.slowT > 0f ? "замедлен" : null;
             if (status != null)
                 Text(new Rect(p.x - 80 * S, p.y + 4 * S, 160 * S, 24 * S), status, sTiny, e.Charmed ? new Color(0.95f, 0.95f, 0.5f) : new Color(0.7f, 0.9f, 1f), TextAnchor.MiddleCenter);
@@ -347,7 +360,7 @@ public class HUD : MonoBehaviour
         {
             var c = ThreatSense.Red ? new Color(1f, 0.15f, 0.1f) : new Color(1f, 0.85f, 0.15f);
             c.a = 0.7f + 0.3f * Mathf.Sin(Time.time * 20f);
-            Text(new Rect(hp.x - 50 * S, hp.y - 60 * S, 100 * S, 60 * S), "!!", sBig, c, TextAnchor.MiddleCenter);
+            TextO(new Rect(hp.x - 50 * S, hp.y - 60 * S, 100 * S, 60 * S), "!!", sBig, c);
         }
 
         // Всплывающий урон.
@@ -359,7 +372,7 @@ public class HUD : MonoBehaviour
             if (!ToScreen(cam, f.pos + Vector3.up * age * 1.2f, out var fp)) continue;
             var c = f.color;
             c.a = 1f - age / 1.1f;
-            Text(new Rect(fp.x - 100 * S, fp.y - 20 * S, 200 * S, 40 * S), f.text, sMed, c, TextAnchor.MiddleCenter);
+            TextO(new Rect(fp.x - 100 * S, fp.y - 20 * S, 200 * S, 40 * S), f.text, sMed, c);
         }
 
         // Прицел и счётчик комбо базовой атаки.
@@ -420,9 +433,9 @@ public class HUD : MonoBehaviour
         foreach (var (pid, key) in Inventory.PotionKeys)
         {
             int cnt = inv.potions[pid];
-            if (cnt <= 0 && pid != "wiggenweld") continue;
+            if (!inv.InfinitePotions && cnt <= 0 && pid != "wiggenweld") continue;
             if (sb.Length > 0) sb.Append("   ");
-            sb.Append(ItemDB.Get(pid).name.Replace("Зелье ", "").Replace("зелье", "").Trim()).Append(' ').Append(cnt).Append(" [").Append(key).Append(']');
+            sb.Append(ItemDB.Get(pid).name.Replace("Зелье ", "").Replace("зелье", "").Trim()).Append(' ').Append(inv.InfinitePotions ? "∞" : cnt.ToString()).Append(" [").Append(key).Append(']');
         }
         string potionText = sb.ToString();
         float potH = sTiny.CalcHeight(new GUIContent(potionText), colW);
@@ -474,12 +487,19 @@ public class HUD : MonoBehaviour
         // Шкала здоровья босса.
         foreach (var t in Targetable.All)
         {
-            if (!t.isBoss || !t.Alive) continue;
+            if (!BossBarVisible(t)) continue;
             float bw = 760 * S;
             var r = new Rect((W - bw) / 2f, 60 * S, bw, 22 * S);
             Text(new Rect(0, 18 * S, W, 40 * S), t.displayName.ToUpper(), sMed, new Color(1f, 0.6f, 0.5f), TextAnchor.MiddleCenter);
             Bar(r, t.health.Frac, new Color(0.8f, 0.15f, 0.1f), new Color(0, 0, 0, 0.7f));
         }
+    }
+
+    // Шкала босса видна только рядом с ним, а не через полкарты.
+    public static bool BossBarVisible(Targetable t)
+    {
+        if (t == null || !t.isBoss || !t.Alive || GameManager.I == null || GameManager.I.player == null) return false;
+        return (t.transform.position - GameManager.I.player.transform.position).magnitude < 90f;
     }
 
     void DrawClock()

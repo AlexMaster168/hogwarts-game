@@ -72,8 +72,10 @@ public static partial class WorldBuilder
         DarkCamp();
         Chapter3();
         HorrorSites();
+        SagaSites();
         Random.state = state;
         StaticBatchingUtility.Combine(Root.gameObject);
+        Root.gameObject.AddComponent<CastleInteriorVisibility>();
     }
 
     static void InitMaterials()
@@ -233,11 +235,11 @@ public static partial class WorldBuilder
         }
 
         // Парящие свечи.
-        for (int i = 0; i < 70; i++)
+        for (int i = 0; i < 40; i++)
         {
             var p = new Vector3(Random.Range(-12f, 12f), Random.Range(8.5f, 12f), Random.Range(29f, 80f));
             Prims.Cyl(g, p, 0.06f, 0.45f, candle, false);
-            Prims.Sphere(g, p + Vector3.up * 0.55f, 0.13f, flame);
+            Prims.Sphere(g, p + Vector3.up * 0.55f, 0.13f, flame, false);
         }
         for (int i = 0; i < 4; i++)
         {
@@ -245,6 +247,7 @@ public static partial class WorldBuilder
             l.transform.SetParent(g, false);
             l.transform.localPosition = new Vector3(0, 10, 33 + i * 15);
             l.type = LightType.Point;
+            l.renderMode = LightRenderMode.ForceVertex;
             l.color = new Color(1f, 0.78f, 0.5f);
             l.range = 24;
             l.intensity = 2.2f;
@@ -570,6 +573,7 @@ public static partial class WorldBuilder
         if ((DarkCampPos - p).magnitude < 18) return true;
         if (BlockedCh3(p)) return true;
         if (BlockedHorror(p)) return true;
+        foreach (var site in SagaPositions) if ((site - p).sqrMagnitude < 35f * 35f) return true;
         foreach (var v in LockedVault.Spots) if ((v - p).magnitude < 7) return true;
         return false;
     }

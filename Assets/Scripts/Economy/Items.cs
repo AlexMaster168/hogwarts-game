@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum ItemKind { Potion, Broom, Robe, Hat, Gloves, Book }
+public enum ItemKind { Potion, Broom, Robe, Hat, Gloves, Book, Artifact }
 
 public class ItemDef
 {
@@ -15,7 +15,7 @@ public class ItemDef
 }
 
 // Каталог всех предметов и лавок.
-public static class ItemDB
+public static partial class ItemDB
 {
     public static readonly List<ItemDef> All = new();
     static readonly Dictionary<string, ItemDef> byId = new();
@@ -65,6 +65,7 @@ public static class ItemDB
         Book("book_imperio", SpellType.Imperio, "Империо", "НЕПРОСТИТЕЛЬНОЕ. Враг 15 секунд сражается за тебя.", 400, true);
         Book("book_crucio", SpellType.Crucio, "Круцио", "НЕПРОСТИТЕЛЬНОЕ. Враг корчится в муках и получает урон.", 550, true);
         Book("book_avada", SpellType.AvadaKedavra, "Авада Кедавра", "НЕПРОСТИТЕЛЬНОЕ. Мгновенная смерть (кроме Ранрока).", 900, true);
+        AddLateStock();
     }
 
     static void Book(string id, SpellType s, string name, string desc, int price, bool forbidden = false)
@@ -83,6 +84,7 @@ public static class ItemDB
         ItemKind.Robe => "Мантия",
         ItemKind.Hat => "Шляпа",
         ItemKind.Gloves => "Перчатки",
+        ItemKind.Artifact => "Артефакт",
         _ => "Книга",
     };
 }

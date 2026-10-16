@@ -13,7 +13,11 @@ public partial class QuestManager : MonoBehaviour
         Ch3Call, Werewolves, PoacherTrail, PoacherCamp, FreeBeasts, GoblinMine, Graveyard, FortressMarch, Rookwood, Epilogue, Free,
         Ch4Call, Ch4Diary, Ch4Hunt, Ch4Witness, Ch4Crypt, Ch4Bell, Ch4Warden, Ch4Return,
         Ch5Call, Ch5Gate, Ch5Shadows, Ch5Memory, Ch5Sentinel, Ch5Anchor, Ch5Procession, Ch5Sovereign, Ch5Return,
-        Ch6Call, Ch6Manor, Ch6Letter, Ch6Quarry, Ch6Ice, Ch6Map, Ch6Mrax, Ch6Return
+        Ch6Call, Ch6Manor, Ch6Letter, Ch6Quarry, Ch6Ice, Ch6Map, Ch6Mrax, Ch6Return,
+        Ch7Call, Ch7Guard, Ch7Puzzle, Ch7Memory, Ch7Boss, Ch7Seal, Ch7Return,
+        Ch8Call, Ch8Guard, Ch8Puzzle, Ch8Memory, Ch8Boss, Ch8Seal, Ch8Return,
+        Ch9Call, Ch9Guard, Ch9Puzzle, Ch9Memory, Ch9Boss, Ch9Seal, Ch9Return,
+        Ch10Call, Ch10Guard, Ch10Puzzle, Ch10Memory, Ch10Boss, Ch10Seal, Ch10Return
     }
 
     public Step step;
@@ -165,11 +169,13 @@ public partial class QuestManager : MonoBehaviour
     public void SetStep(Step s, bool announce = true)
     {
         ClearHorrorEncounter();
+        ClearSaga();
         step = s;
         talkTarget = null;
         progress = "";
         hasMarker = false;
-        switch (s)
+        if (SagaActive) ConfigureSaga(s);
+        else switch (s)
         {
             case Step.MeetFig:
                 title = "Новый студент"; objective = "Поговори с профессором Фиг";
@@ -336,6 +342,7 @@ public partial class QuestManager : MonoBehaviour
     void Update()
     {
         if (!GameState.Playing) return;
+        if (UpdateSaga()) return;
         if (UpdateHorror()) return;
         playTime += Time.deltaTime;
         if (UpdateExtension()) return;
@@ -458,6 +465,7 @@ public partial class QuestManager : MonoBehaviour
     // Разговор с NPC (по E).
     public void Talk(NPC npc)
     {
+        if (TalkSaga(npc)) return;
         if (TalkExtension(npc)) return;
         if (TalkHorror(npc)) return;
         if (TalkCh3(npc)) return;

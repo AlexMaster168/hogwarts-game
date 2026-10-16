@@ -10,6 +10,7 @@ public class ShopUI : MonoBehaviour
     int styleH = -1;
     float S;
     Texture2D white;
+    Vector2 shopScroll, inventoryScroll;
 
     static readonly Color Gold = new(1f, 0.83f, 0.45f);
 
@@ -19,9 +20,10 @@ public class ShopUI : MonoBehaviour
         white = Texture2D.whiteTexture;
     }
 
-    public static void Open(string id)
+    public static void Open(string id, bool lastItem = false)
     {
         I.shopId = id;
+        I.shopScroll = lastItem ? new Vector2(0, 100000) : Vector2.zero;
         ChangedFrame = Time.frameCount;
         SFX.Play("book", 0.6f);
         GameState.Set(GameMode.Shop);
@@ -109,7 +111,9 @@ public class ShopUI : MonoBehaviour
         Label(new Rect(win.x, win.y + 26 * S, win.width - 30 * S, 40 * S), $"Галлеоны: {inv.galleons}", sName, new Color(1f, 0.85f, 0.35f), TextAnchor.UpperRight);
         float y = win.y + 95 * S;
         bool compact = shop.items.Length > 5;
-        float rowH = compact ? 72 * S : 112 * S;
+        float rowH = compact ? 88 * S : 112 * S;
+        shopScroll = GUI.BeginScrollView(new Rect(win.x + 10 * S, y, win.width - 20 * S, win.height - 155 * S), shopScroll,
+            new Rect(win.x + 10 * S, y, win.width - 45 * S, shop.items.Length * (rowH + 8 * S)));
         foreach (var id in shop.items)
         {
             var d = ItemDB.Get(id);
@@ -121,7 +125,7 @@ public class ShopUI : MonoBehaviour
             if (compact)
             {
                 Label(new Rect(row.x + 380 * S, row.y + 10 * S, 400 * S, 26 * S), kind, sSmall, new Color(0.7f, 0.7f, 0.8f));
-                Label(new Rect(row.x + 22 * S, row.y + 38 * S, 860 * S, 30 * S), d.desc, sSmall, new Color(0.9f, 0.9f, 0.9f));
+                Label(new Rect(row.x + 22 * S, row.y + 38 * S, 860 * S, 46 * S), d.desc, sSmall, new Color(0.9f, 0.9f, 0.9f));
             }
             else
             {
@@ -138,7 +142,8 @@ public class ShopUI : MonoBehaviour
             else Label(btn, reason, sSmall, new Color(1f, 0.6f, 0.5f), TextAnchor.MiddleCenter);
             y += rowH + 8 * S;
         }
-        Label(new Rect(win.x, win.yMax - 50 * S, win.width - 30 * S, 40 * S), "[Esc] или [E] — уйти     [I] — инвентарь (вне лавки)", sSmall, new Color(0.7f, 0.7f, 0.8f), TextAnchor.MiddleRight);
+        GUI.EndScrollView();
+        Label(new Rect(win.x, win.yMax - 50 * S, win.width - 30 * S, 40 * S), "Колесо — список товаров     [Esc] или [E] — уйти", sSmall, new Color(0.7f, 0.7f, 0.8f), TextAnchor.MiddleRight);
     }
 
     void DrawInventory(Rect win, PlayerController p)
@@ -150,9 +155,11 @@ public class ShopUI : MonoBehaviour
 
         // Снаряжение.
         float x = win.x + 30 * S, y = win.y + 95 * S, colW = 560 * S;
+        inventoryScroll = GUI.BeginScrollView(new Rect(win.x + 10 * S, y, win.width - 20 * S, win.height - 155 * S), inventoryScroll,
+            new Rect(win.x + 10 * S, y, win.width - 45 * S, Mathf.Max(1000, 500 + inv.owned.Count * 48, 700 + c.Pages * 65) * S));
         Label(new Rect(x, y, colW, 34 * S), "Снаряжение", sName, Gold);
         y += 40 * S;
-        foreach (var kind in new[] { ItemKind.Robe, ItemKind.Hat, ItemKind.Gloves, ItemKind.Broom })
+        foreach (var kind in new[] { ItemKind.Robe, ItemKind.Hat, ItemKind.Gloves, ItemKind.Broom, ItemKind.Artifact })
         {
             inv.equipped.TryGetValue(kind, out var eqId);
             var eq = eqId != null ? ItemDB.Get(eqId) : null;
@@ -197,8 +204,8 @@ public class ShopUI : MonoBehaviour
             var d = ItemDB.Get(id);
             Box(new Rect(x2, y, colW - 20 * S, 36 * S), new Color(1, 1, 1, 0.05f));
             Box(new Rect(x2, y, 5 * S, 36 * S), d.color);
-            Label(new Rect(x2 + 14 * S, y + 4 * S, 400 * S, 30 * S), $"{d.name} x{inv.potions[id]}  [{key}]", sText, Color.white);
-            if (inv.potions[id] > 0 && GUI.Button(new Rect(x2 + colW - 140 * S, y + 3 * S, 110 * S, 30 * S), "Выпить", sBtn))
+            Label(new Rect(x2 + 14 * S, y + 4 * S, 400 * S, 30 * S), $"{d.name} x{(inv.InfinitePotions ? "∞" : inv.potions[id].ToString())}  [{key}]", sText, Color.white);
+            if ((inv.InfinitePotions || inv.potions[id] > 0) && GUI.Button(new Rect(x2 + colW - 140 * S, y + 3 * S, 110 * S, 30 * S), "Выпить", sBtn))
             {
                 GameState.Set(GameMode.Play);
                 inv.UsePotion(id);
@@ -222,6 +229,7 @@ public class ShopUI : MonoBehaviour
             y += 60 * S;
         }
         if (c.learned.Count == 0) Label(new Rect(x2, y, colW, 30 * S), "Пока только базовое заклинание.", sText, new Color(0.6f, 0.6f, 0.6f));
-        Label(new Rect(win.x, win.yMax - 50 * S, win.width - 30 * S, 40 * S), "[I] или [Esc] — закрыть", sSmall, new Color(0.7f, 0.7f, 0.8f), TextAnchor.MiddleRight);
+        GUI.EndScrollView();
+        Label(new Rect(win.x, win.yMax - 50 * S, win.width - 30 * S, 40 * S), "Колесо — прокрутка    [I] или [Esc] — закрыть", sSmall, new Color(0.7f, 0.7f, 0.8f), TextAnchor.MiddleRight);
     }
 }

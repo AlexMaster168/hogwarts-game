@@ -179,7 +179,7 @@ public partial class QuestManager
 
     void AdvanceHorror()
     {
-        var next = step == Step.Ch6Return ? Step.Free : (Step)((int)step + 1);
+        var next = step == Step.Ch6Return ? Step.Ch7Call : (Step)((int)step + 1);
         Line[] lines = step switch
         {
             Step.Ch4Call => new[] { new Line(Hecat, "Экспедиция к западной часовне слышала колокол, которого нет ни на одной карте. Никто не вернулся."),
@@ -220,11 +220,11 @@ public partial class QuestManager
             Step.Ch6Mrax => new[] { new Line(Mrax, "Камень… треснул… Мой род веками ждал этого трона…"),
                                     new Line(You, "Трон из чужих имён и украденной магии? Пусть ждёт дальше. Осколок возвращается в Хогвартс.") },
             _ => new[] { new Line(Fig, "Осколок снова в хранилище, имена экспедиции записаны, а Утёс ветров затих."),
-                         new Line(Fig, "Шесть глав, шесть побед. Ты прошёл путь от новичка до хранителя Хогвартса. Теперь отдыхай по-настоящему.") },
+                         new Line(Fig, "Но осколок оставил след на атласе Хранителей. В нём не хватает четырёх страниц. Поговорим о первой.") },
         };
         Dialogue.Show(() =>
         {
-            if (next == Step.Free) horrorComplete = true;
+            if (next == Step.Free || next == Step.Ch7Call) horrorComplete = true;
             SetStep(next);
             if (next == Step.Free) GameState.Set(GameMode.Victory);
         }, lines);

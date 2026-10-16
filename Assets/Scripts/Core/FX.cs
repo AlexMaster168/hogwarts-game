@@ -107,6 +107,47 @@ public static class FX
         return ps;
     }
 
+    // Стелющийся туман: плоские частицы над землёй по всей площадке. Лежат горизонтально,
+    // поэтому не разворачиваются за камерой и не режутся о землю; плавно появляются и тают.
+    public static ParticleSystem Mist(Transform parent, Vector3 center, float radius, Color c, float height = 0.35f, float size = 3.5f)
+    {
+        var ps = MakePS(Vector3.zero, Quaternion.identity, "FX_Mist");
+        ps.transform.SetParent(parent, false);
+        ps.transform.position = center + Vector3.up * height;
+        ps.transform.rotation = Quaternion.Euler(-90, 0, 0);
+        var main = ps.main;
+        main.loop = true;
+        main.prewarm = true;
+        main.maxParticles = 120;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(7f, 11f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.05f, 0.25f);
+        main.startSize = new ParticleSystem.MinMaxCurve(size * 0.6f, size);
+        main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+        main.startColor = c;
+        main.gravityModifier = 0f;
+        var sh = ps.shape;
+        sh.enabled = true;
+        sh.shapeType = ParticleSystemShapeType.Circle;
+        sh.radius = radius;
+        sh.radiusThickness = 1f;
+        var em = ps.emission;
+        em.enabled = true;
+        em.rateOverTime = Mathf.Clamp(radius * 0.6f, 4f, 14f);
+        var col = ps.colorOverLifetime;
+        var g = new Gradient();
+        g.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) },
+                  new[] { new GradientAlphaKey(0, 0), new GradientAlphaKey(1, 0.3f), new GradientAlphaKey(1, 0.7f), new GradientAlphaKey(0, 1) });
+        col.color = g;
+        var sz = ps.sizeOverLifetime;
+        sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.85f, 1, 1.15f));
+        var r = ps.GetComponent<ParticleSystemRenderer>();
+        r.renderMode = ParticleSystemRenderMode.HorizontalBillboard;
+        r.sharedMaterial = MatLib.Additive(Color.white);
+        ps.Play();
+        return ps;
+    }
+
     public static void Flash(Vector3 pos, Color c, float intensity = 4f, float range = 12f, float life = 0.3f)
     {
         var go = new GameObject("FX_Flash");

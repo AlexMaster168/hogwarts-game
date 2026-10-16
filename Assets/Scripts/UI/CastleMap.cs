@@ -26,6 +26,7 @@ public class CastleMap : MonoBehaviour
     {
         var p=GameManager.I.player.transform.position;
         level=CastleLocations.Current(p)=="Окрестности Хогвартса"?(InVillage(p)?Village:Outskirts):CastleLocations.Floor(p);
+        MapArt.Prepare();
         zoom=1; pan=Vector2.zero; ChangedFrame=Time.frameCount; GameState.Set(GameMode.Map);
     }
     public void Close(){ChangedFrame=Time.frameCount;GameState.Set(GameMode.Play);}
@@ -38,6 +39,8 @@ public class CastleMap : MonoBehaviour
         => new Vector2(area.x+(p.x-world.xMin)/world.width*area.width,area.yMax-(p.z-world.yMin)/world.height*area.height);
     void Update()
     {
+        // Автотест управляет картой сам: случайные нажатия в окне игры не должны её открывать.
+        if(SmokeTest.Requested)return;
         if(GameState.Playing && Input.GetKeyDown(KeyCode.V)) Open();
         else if(GameState.Mode==GameMode.Map && (Input.GetKeyDown(KeyCode.V)||Input.GetKeyDown(KeyCode.Escape)))Close();
     }
@@ -50,7 +53,11 @@ public class CastleMap : MonoBehaviour
             float h=VillageArea.width*canvas.height/Mathf.Max(1,canvas.width);
             return new Rect(VillageArea.x,VillageArea.center.y-h/2,VillageArea.width,h);
         }
-        return level==Outskirts?new Rect(-300,-250,600,600):Bounds;
+        // Пропорции как у окна карты: мир не растягивается, лишнее место — по краям.
+        var b=level==Outskirts?MapArt.World:Bounds;
+        float aspect=canvas.width/Mathf.Max(1,canvas.height);
+        if(b.width/b.height<aspect){float w=b.height*aspect;return new Rect(b.center.x-w/2,b.y,w,b.height);}
+        float hh=b.width/aspect;return new Rect(b.x,b.center.y-hh/2,b.width,hh);
     }
 
     void OnGUI()
@@ -72,9 +79,12 @@ public class CastleMap : MonoBehaviour
                 var r=new Rect(16,16,200,160);
                 Box(r,new Color(.05f,.08f,.12f,.85f));
                 var miniWorld=new Rect(pc.transform.position.x-40,pc.transform.position.z-32,80,64);
+                int miniTab=TabOf(pc.transform.position);
                 GUI.BeginGroup(r);
-                DrawPlan(new Rect(0,0,r.width,r.height),miniWorld,CastleLocations.Floor(pc.transform.position),false);
+                DrawPlan(new Rect(0,0,r.width,r.height),miniWorld,miniTab>=Outskirts?Outskirts:miniTab,false);
                 GUI.EndGroup();
+                Box(new Rect(r.x,r.y,r.width,2),Gold);Box(new Rect(r.x,r.yMax-2,r.width,2),Gold);
+                Box(new Rect(r.x,r.y,2,r.height),Gold);Box(new Rect(r.xMax-2,r.y,2,r.height),Gold);
                 GUI.Label(new Rect(16,180,260,45),CastleLocations.Current(pc.transform.position)+"\n[V] Карта",small);
                 if(target.HasValue)
                     GUI.Label(new Rect(16,225,270,45),"До выбранной цели: "+Vector3.Distance(pc.transform.position,target.Value).ToString("0")+" м",small);
@@ -88,14 +98,17 @@ public class CastleMap : MonoBehaviour
             }
             return;
         }
-        Box(new Rect(0,0,Screen.width,Screen.height),new Color(.025f,.035f,.06f,.98f));
-        GUI.Label(new Rect(25,12,Screen.width-50,35),"ХОГВАРТС — карта",new GUIStyle(label){fontSize=25});
+        Box(new Rect(0,0,Screen.width,Screen.height),new Color(.06f,.045f,.03f,.98f));
+        var titleSt=new GUIStyle(label){fontSize=26,fontStyle=FontStyle.Bold};titleSt.normal.textColor=new Color(1f,.85f,.5f);
+        GUI.Label(new Rect(25,10,Screen.width-50,38),"ХОГВАРТС — карта",titleSt);
         string[] tabs={"Подземелье","Первый этаж","Галерея","Башня","Окрестности","Хогсмид"};
         for(int i=0;i<tabs.Length;i++)
             if(GUI.Toggle(new Rect(25+i*140,55,135,30),level==i-1,tabs[i],GUI.skin.button) && level!=i-1){level=i-1;pan=Vector2.zero;zoom=1;}
         if(GUI.Button(new Rect(Screen.width-120,15,100,30),"Закрыть [V]"))Close();
         canvas=new Rect(25,100,Screen.width-345,Screen.height-155);
-        Box(canvas,level==Village?new Color(.2f,.24f,.16f):new Color(.13f,.105f,.075f));
+        Box(new Rect(canvas.x-4,canvas.y-4,canvas.width+8,canvas.height+8),new Color(.55f,.42f,.2f));
+        Box(new Rect(canvas.x-2,canvas.y-2,canvas.width+4,canvas.height+4),new Color(.12f,.09f,.05f));
+        Box(canvas,new Color(.86f,.79f,.62f));
         var baseWorld=BaseWorld();
         var world=new Rect(baseWorld.center+pan-baseWorld.size/(zoom*2),baseWorld.size/zoom);
         var ev=Event.current;
@@ -109,6 +122,14 @@ public class CastleMap : MonoBehaviour
         {SelectPoint(Unproject(e2.mousePosition,new Rect(0,0,canvas.width,canvas.height),world));e2.Use();}
         GUI.EndGroup();
         GUI.Label(new Rect(canvas.x,canvas.y,55,25),"С ↑",label);
+        int hereTab=TabOf(pc.transform.position);
+        if(hereTab!=level&&!(hereTab>=Outskirts&&level>=Outskirts))
+        {
+            var hr=new Rect(canvas.xMax-300,canvas.yMax-36,292,30);
+            Box(hr,new Color(0,0,0,.75f));
+            var hs=new GUIStyle(small){alignment=TextAnchor.MiddleCenter,fontStyle=FontStyle.Bold};hs.normal.textColor=new Color(.35f,.95f,1f);
+            if(GUI.Button(hr,"Вы сейчас: "+TabNames[hereTab+1]+" — показать",hs)){level=hereTab;pan=Vector2.zero;zoom=1;}
+        }
         // Баннер цели: где она и кнопка, чтобы открыть нужную вкладку.
         var qt=QuestTarget(out var qTitle,out var qCol);
         if(qt.HasValue)
@@ -120,7 +141,7 @@ public class CastleMap : MonoBehaviour
             GUI.Label(new Rect(br.x+10,br.y,br.width-130,br.height),"Цель задания: "+qTitle+" — "+TabNames[tab+1],bs);
             if(tab!=level&&GUI.Button(new Rect(br.xMax-115,br.y+3,110,24),"Показать")){level=tab;pan=Vector2.zero;zoom=1;}
         }
-        GUI.Label(new Rect(25,Screen.height-50,Screen.width-50,45),"ЛКМ по помещению, голубой точке или любому месту окрестностей — выбрать · Колесо: масштаб · Правая кнопка: сдвиг\nГолубые точки — места перемещения, розовая — своя точка, зелёные — тёмные маги с непростительными заклинаниями, оранжевые — запертые хранилища (Алохомора).",small);
+        GUI.Label(new Rect(25,Screen.height-50,Screen.width-50,45),"ЛКМ по помещению, голубой точке или любому месту окрестностей — выбрать · Колесо: масштаб · Правая кнопка: сдвиг · Жёлтая стрелка в кольце — вы\nГолубые точки — перемещение, розовая — своя точка, зелёные — тёмные маги, оранжевые — хранилища (Алохомора). Круги: оранжевые — глава 3, фиолетовые — главы 4–5, голубые — глава 6.",small);
         DrawList(pc);
     }
 
@@ -178,10 +199,13 @@ public class CastleMap : MonoBehaviour
 
     void DrawPlan(Rect area,Rect world,int floor,bool names)
     {
-        queue.Clear();taken.Clear();
+        queue.Clear();taken.Clear();labels=names;
         if(floor==Village){DrawVillage(area,world,names);return;}
+        if(floor>=Outskirts)MapArt.DrawAerial(area,world);
+        else Parchment(area,world);
         if(floor==Outskirts)
         {
+            if(names)Sites(area,world);
             WorldDot("Запретный лес",WorldBuilder.ForestCenter,area,world);
             WorldDot("Озеро",WorldBuilder.LakeCenter,area,world);
             for(int i=0;i<Activities.MerlinSites.Length;i++)
@@ -202,12 +226,15 @@ public class CastleMap : MonoBehaviour
             var b=Project(new Vector3(l.area.xMax,0,l.area.yMin),area,world);
             var r=Rect.MinMaxRect(a.x,a.y,b.x,b.y);
             bool sel=selected>=0&&CastleLocations.All[selected]==l;
-            Box(r,sel?new Color(1f,.85f,.4f):new Color(.73f,.58f,.33f));
-            Box(new Rect(r.x+2,r.y+2,Mathf.Max(0,r.width-4),Mathf.Max(0,r.height-4)),new Color(.3f,.24f,.16f));
-            if(floor==Outskirts)taken.Add(r);
+            if(floor==Outskirts){taken.Add(r);continue;}
+            var fill=RoomColor(l.name);
+            Box(new Rect(r.x+2,r.y+3,r.width,r.height),new Color(0,0,0,.25f));
+            Box(r,sel?new Color(1f,.85f,.4f):new Color(.32f,.22f,.1f));
+            Box(new Rect(r.x+2,r.y+2,Mathf.Max(0,r.width-4),Mathf.Max(0,r.height-4)),sel?Color.Lerp(fill,Color.white,.35f):fill);
             if(names && floor!=Outskirts)
             {
-                GUI.Label(r,l.name,label);
+                var rs=new GUIStyle(label){fontStyle=FontStyle.Bold};rs.normal.textColor=new Color(.1f,.07f,.03f);
+                GUI.Label(r,l.name,rs);
                 if(GUI.Button(r,GUIContent.none,GUIStyle.none))Select(CastleLocations.All.IndexOf(l));
             }
         }
@@ -227,14 +254,7 @@ public class CastleMap : MonoBehaviour
     // Хогсмид крупно: улица, дома, лавки с подписями, точки перемещения.
     void DrawVillage(Rect area,Rect world,bool names)
     {
-        var c=WorldBuilder.HogsmeadeCenter;
-        WorldRect(new Rect(c.x-46,c.z-8,92,16),area,world,new Color(.5f,.47f,.4f));
-        foreach(var h in WorldBuilder.VillageHouses)
-        {
-            WorldRect(h,area,world,new Color(.55f,.42f,.3f));
-            WorldRect(new Rect(h.x+.6f,h.y+.6f,h.width-1.2f,h.height-1.2f),area,world,new Color(.36f,.27f,.2f));
-        }
-        WorldRect(new Rect(WorldBuilder.ShadyPos.x-3,WorldBuilder.ShadyPos.z-5,6,6),area,world,new Color(.1f,.16f,.1f));
+        MapArt.DrawAerial(area,world);
         foreach(var n in NPC.All)
         {
             if(n==null||n.shopId==null||!InVillage(n.transform.position))continue;
@@ -273,9 +293,10 @@ public class CastleMap : MonoBehaviour
         var p=GameManager.I.player.transform.position;
         if(outside || CastleLocations.Floor(p)==floor)
         {
-            var v=Project(p,area,world); Box(new Rect(v.x-5,v.y-5,10,10),Color.cyan);
-            var dir=GameManager.I.player.transform.forward;
-            var end=Project(p+dir*(floor==Outskirts?12:4),area,world);Box(new Rect(end.x-2,end.y-2,4,4),Color.white);
+            var v=Project(p,area,world);
+            bool big=area.width>=300;
+            if(hereTag==null){hereTag=new GUIStyle(GUI.skin.label){alignment=TextAnchor.MiddleCenter,fontStyle=FontStyle.Bold,fontSize=14};}
+            MapArt.PlayerMarker(v,GameManager.I.player.transform.eulerAngles.y,big?1f:.7f,big,hereTag);
         }
         if(selectedPoint.HasValue&&outside)
         {var v=Project(selectedPoint.Value,area,world);Box(new Rect(v.x-7,v.y-7,14,14),Color.white);Box(new Rect(v.x-5,v.y-5,10,10),new Color(1f,.4f,.8f));}
@@ -308,7 +329,46 @@ public class CastleMap : MonoBehaviour
         }
     }
 
-    GUIStyle qTag;
+    GUIStyle qTag, hereTag;
+    bool labels = true;
+    static readonly Color Gold = new(.75f,.58f,.28f);
+
+    // Пергамент с сеткой 10 м для этажей замка.
+    static void Parchment(Rect area,Rect world)
+    {
+        Box(area,new Color(.86f,.79f,.62f));
+        var line=new Color(.55f,.45f,.3f,.25f);
+        for(float x=Mathf.Ceil(world.xMin/10)*10;x<world.xMax;x+=10){var v=Project(new Vector3(x,0,0),area,world);Box(new Rect(v.x,area.y,1,area.height),line);}
+        for(float z=Mathf.Ceil(world.yMin/10)*10;z<world.yMax;z+=10){var v=Project(new Vector3(0,0,z),area,world);Box(new Rect(area.x,v.y,area.width,1),line);}
+    }
+
+    // Свой цвет у каждой комнаты: мягкая палитра по имени.
+    static Color RoomColor(string name)
+    {
+        int h=0;foreach(var ch in name)h=h*31+ch;
+        float hue=(Mathf.Abs(h)%360)/360f;
+        return Color.HSVToRGB(hue,.32f,.88f);
+    }
+
+    // Места глав III–VI: цветной круг по главе.
+    static readonly (Vector3 pos,float r,Color col)[] SiteRings =
+    {
+        (WorldBuilder.PoacherCampPos,22,new Color(1f,.55f,.2f)),(WorldBuilder.MinePos,20,new Color(1f,.55f,.2f)),(WorldBuilder.GraveyardPos,14,new Color(1f,.55f,.2f)),(WorldBuilder.FortressPos,26,new Color(1f,.55f,.2f)),
+        (QuestManager.Chapel,24,new Color(.75f,.45f,1f)),(QuestManager.Veil,24,new Color(.75f,.45f,1f)),
+        (WorldBuilder.ManorPos,24,new Color(.45f,.85f,1f)),(WorldBuilder.QuarryPos,24,new Color(.45f,.85f,1f)),(WorldBuilder.IceCavePos,24,new Color(.45f,.85f,1f)),(WorldBuilder.PeakPos,24,new Color(.45f,.85f,1f)),
+    };
+
+    void Sites(Rect area,Rect world)
+    {
+        foreach(var s in SiteRings)
+        {
+            var v=Project(s.pos,area,world);
+            float r=s.r/world.width*area.width;
+            GUI.color=new Color(s.col.r,s.col.g,s.col.b,.85f);
+            GUI.DrawTexture(new Rect(v.x-r,v.y-r,2*r,2*r),MapArt.Ring);
+            GUI.color=Color.white;
+        }
+    }
 
     // Куда вести игрока сейчас: поручение в фокусе или сюжет.
     public static Vector3? QuestTarget(out string title,out Color col)
@@ -344,10 +404,10 @@ public class CastleMap : MonoBehaviour
     GUIStyle tag;
 
     Vector2 Dot(Vector3 p,Rect area,Rect world,Color col)
-    {var v=Project(p,area,world);var r=new Rect(v.x-4,v.y-4,8,8);Box(r,col);taken.Add(r);return v;}
+    {var v=Project(p,area,world);var r=new Rect(v.x-4,v.y-4,8,8);Box(new Rect(r.x-1,r.y-1,10,10),new Color(0,0,0,.8f));Box(r,col);taken.Add(r);return v;}
 
     void WorldDot(string n,Vector3 p,Rect area,Rect world,Color? col=null,int prio=1)
-    {var v=Dot(p,area,world,col??Color.yellow);queue.Add((n,v,Color.white,prio));}
+    {var v=Dot(p,area,world,col??Color.yellow);if(labels)queue.Add((n,v,Color.white,prio));}
 
     void FlushLabels(Rect area)
     {
@@ -367,7 +427,7 @@ public class CastleMap : MonoBehaviour
                 if(hit<bestHit){bestHit=hit;best=r;if(hit<=0)break;}
             }
             taken.Add(best);
-            Box(new Rect(best.x-2,best.y,best.width+4,best.height),new Color(0,0,0,.45f));
+            Box(new Rect(best.x-2,best.y,best.width+4,best.height),new Color(0,0,0,.62f));
             tag.normal.textColor=col;GUI.Label(best,text,tag);
         }
         queue.Clear();

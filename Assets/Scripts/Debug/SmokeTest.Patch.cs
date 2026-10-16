@@ -323,6 +323,7 @@ public partial class SmokeTest
         yield return DifficultyTest();
         yield return VaultTest();
         yield return GamesTest();
+        yield return EchoTest();
         Debug.Log($"HM_PATCH_RESULT errors={errors}");
     }
 

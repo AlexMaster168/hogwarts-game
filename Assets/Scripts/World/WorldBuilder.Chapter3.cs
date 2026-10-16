@@ -101,7 +101,8 @@ public static partial class WorldBuilder
             }
         Prims.Cyl(g, c, 1.2f, 0.3f, stoneDark);
         Prims.Sphere(g, c + Vector3.up * 0.8f, 0.8f, MatLib.Glow(new Color(0.3f, 1f, 0.45f), 2f));
-        FX.Loop(g, c + Vector3.up * 0.3f, new Color(0.3f, 1f, 0.45f, 0.35f), 16, 3f, 0.4f);
+        FX.Loop(g, c + Vector3.up * 0.3f, new Color(0.3f, 1f, 0.45f, 0.35f), 10, 0.9f, 0.6f);
+        FX.Mist(g, c, 9f, new Color(0.35f, 0.8f, 0.45f, 0.18f), 0.3f, 2.5f);
     }
 
     static void Fortress()

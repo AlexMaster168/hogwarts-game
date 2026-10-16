@@ -46,6 +46,7 @@ public class Progression : MonoBehaviour
         EnemyKind.Golem => 110,
         EnemyKind.IceWraith => 50,
         EnemyKind.Mrax => 1000,
+        EnemyKind.EchoDevourer => 500,
         _ => 25,
     };
 

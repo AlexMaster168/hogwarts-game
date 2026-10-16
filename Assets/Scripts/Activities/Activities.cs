@@ -305,6 +305,7 @@ public class Activities : MonoBehaviour
     // ---------------- журнал и интерфейс ----------------
     void Update()
     {
+        if (SmokeTest.Requested) return;
         if (GameState.Playing && Input.GetKeyDown(KeyCode.O)) { journalOpen = true; GameState.Set(GameMode.Journal); }
         else if (GameState.Mode == GameMode.Journal && (Input.GetKeyDown(KeyCode.O) || Input.GetKeyDown(KeyCode.Escape))) CloseJournal();
     }

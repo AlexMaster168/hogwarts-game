@@ -48,6 +48,10 @@ public class RoomServices : MonoBehaviour
         ("Каменоломня",WorldBuilder.QuarryPos+Vector3.back*24,"Глава 6: южная каменоломня с големами."),
         ("Ледяная пещера",WorldBuilder.IceCavePos+Vector3.back*24,"Глава 6: пещера ледяных призраков на юго-западе."),
         ("Утёс ветров",WorldBuilder.PeakPos+Vector3.back*24,"Глава 6: кольцо менгиров к востоку от Хогсмида."),
+        ("Сад пепла",WorldBuilder.SagaPositions[0]+Vector3.back*22,"Глава 7: вода и огненные печати."),
+        ("Бронзовая обсерватория",WorldBuilder.SagaPositions[1]+Vector3.back*22,"Глава 8: сломанный механизм и часовщик."),
+        ("Зеркальный монастырь",WorldBuilder.SagaPositions[2]+Vector3.back*22,"Глава 9: свет, тени и Регент."),
+        ("Архив гроз",WorldBuilder.SagaPositions[3]+Vector3.back*22,"Глава 10: проводники и последняя страница."),
     };
     void Awake(){I=this;visited.Add("Двор");}
     void Update()

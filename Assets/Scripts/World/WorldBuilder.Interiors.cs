@@ -176,9 +176,11 @@ public static partial class WorldBuilder
     // ---------------- ПОМОЩНИКИ ----------------
     static void KFloor(float x0, float z0, int nx, int nz, string tile)
     {
+        // Сплошной ровный пол вместо земли под декоративными тайлами.
+        Kit.Blocker(kitRoot, new Vector3(x0 + nx * KT / 2f, 0.06f, z0 + nz * KT / 2f), new Vector3(nx * KT, 0.12f, nz * KT), Quaternion.identity);
         for (int i = 0; i < nx; i++)
             for (int j = 0; j < nz; j++)
-                Kit.Place(kitRoot, tile, new Vector3(x0 + (i + 0.5f) * KT, 0, z0 + (j + 0.5f) * KT), 0, KS);
+                Kit.Place(kitRoot, tile, new Vector3(x0 + (i + 0.5f) * KT, 0.04f, z0 + (j + 0.5f) * KT), 0, KS);
     }
 
     // Ряд стен по сетке. Символы: w стена, o окно, c закрытое окно, s полки, a арка, d дверной проём, - пропуск.
@@ -280,6 +282,7 @@ public static partial class WorldBuilder
         l.transform.SetParent(kitRoot, false);
         l.transform.position = p;
         l.type = LightType.Point;
+        l.renderMode = LightRenderMode.ForceVertex;
         l.color = col ?? new Color(1f, 0.78f, 0.5f);
         l.range = range;
         l.intensity = intensity;

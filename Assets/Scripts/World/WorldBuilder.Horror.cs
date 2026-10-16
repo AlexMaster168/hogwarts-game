@@ -74,7 +74,7 @@ public static partial class WorldBuilder
             if (p.z > c.z + 12) continue;
             Prims.Box(g, p + Vector3.up * 0.55f, new Vector3(0.8f, 1.1f, 0.2f), grave, false, Quaternion.Euler(Random.Range(-10f, 10f), a * -Mathf.Rad2Deg + 90, 0));
         }
-        FX.Loop(g, c + Vector3.up * 0.4f, new Color(0.5f, 0.45f, 0.65f, 0.2f), 14, 6f, 0.3f);
+        FX.Mist(g, c, 20f, new Color(0.62f, 0.58f, 0.78f, 0.22f));
         SiteLight(g, c + new Vector3(0, 6, 4), ghost, 30, 1.6f);
     }
 
@@ -84,7 +84,8 @@ public static partial class WorldBuilder
         var g = Prims.Group(Root, "Врата Завесы");
         var stone = MatLib.Solid(new Color(0.15f, 0.17f, 0.22f));
         var violet = new Color(0.5f, 0.12f, 0.7f);
-        Prims.Box(g, c + new Vector3(0, -0.1f, 0), new Vector3(44, 0.2f, 44), stone);
+        // Плита чуть выше травы: совпадающие плоскости мерцали при движении камеры.
+        Prims.Box(g, c + new Vector3(0, 0.04f, 0), new Vector3(44, 0.08f, 44), stone);
         for (int i = 0; i < 10; i++)
         {
             float a = i * Mathf.PI * 2 / 10;
@@ -96,7 +97,9 @@ public static partial class WorldBuilder
         Prims.Box(g, c + new Vector3(-5, 4, 15), new Vector3(1.5f, 8, 2), stone);
         Prims.Box(g, c + new Vector3(5, 4, 15), new Vector3(1.5f, 8, 2), stone);
         Prims.Box(g, c + new Vector3(0, 8, 15), new Vector3(12, 1.5f, 2), stone);
-        Prims.Make(PrimitiveType.Sphere, g, c + new Vector3(0, 4, 15), new Vector3(8, 7.5f, 0.6f), MatLib.Glow(new Color(0.25f, 0.05f, 0.45f), 2.5f), false);
+        // Разлом тёмный с мягким свечением: на ярко-розовом не читались подписи и цифры урона.
+        Prims.Make(PrimitiveType.Sphere, g, c + new Vector3(0, 4, 15), new Vector3(8, 7.5f, 0.6f), MatLib.Glow(new Color(0.16f, 0.04f, 0.28f), 1.1f), false);
+        Prims.Make(PrimitiveType.Sphere, g, c + new Vector3(0, 4, 14.6f), new Vector3(6.4f, 6f, 0.4f), MatLib.Solid(new Color(0.03f, 0.01f, 0.06f), 0f), false);
         FX.Loop(g, c + new Vector3(0, 3, 15), new Color(0.6f, 0.2f, 0.9f, 0.35f), 25, 1.2f, 1.5f);
         // Парящие обломки.
         for (int i = 0; i < 12; i++)
@@ -111,7 +114,7 @@ public static partial class WorldBuilder
         var memory = c + new Vector3(-12, 0, 0);
         Prims.Cyl(g, memory, 0.9f, 1.1f, stone);
         Prims.Sphere(g, memory + Vector3.up * 1.6f, 0.9f, MatLib.Glow(new Color(0.6f, 0.85f, 1f), 2.5f));
-        FX.Loop(g, c + Vector3.up * 0.3f, new Color(0.4f, 0.2f, 0.55f, 0.25f), 18, 6f, 0.4f);
+        FX.Mist(g, c, 20f, new Color(0.5f, 0.3f, 0.7f, 0.25f));
         SiteLight(g, c + new Vector3(0, 6, 8), violet, 34, 2f);
     }
 
@@ -251,7 +254,7 @@ public static partial class WorldBuilder
             Prims.Cyl(g, br, 0.5f, 1.2f, stoneDark);
             Prims.Sphere(g, br + Vector3.up * 1.5f, 0.7f, MatLib.Glow(blue, 2.5f));
         }
-        FX.Loop(g, c + Vector3.up * 1.5f, new Color(0.85f, 0.9f, 1f, 0.15f), 12, 5f, 2.5f);
+        FX.Mist(g, c, 18f, new Color(0.85f, 0.9f, 1f, 0.18f), 0.5f);
         SiteLight(g, alt + Vector3.up * 3, blue, 30, 1.8f);
     }
 }

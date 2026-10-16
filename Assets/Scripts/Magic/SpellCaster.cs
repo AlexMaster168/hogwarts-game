@@ -54,6 +54,13 @@ public class SpellCaster : MonoBehaviour
         Def(SpellType.Arresto, "Арресто Моментум", 14f, 6f, 0f, 0f, new Color(0.6f, 0.95f, 0.95f));
         Def(SpellType.Patronus, "Экспекто Патронум", 18f, 70f, 0f, 0f, PatronusSpirit.Silver);
         Slot(SpellType.Patronus).special = true;
+        Def(SpellType.Lumos, "Люмос", 3f, 0f, 0f, 0f, new Color(1f, 1f, 0.65f));
+        Def(SpellType.Reparo, "Репаро", 6f, 0f, 0f, 0f, new Color(0.5f, 1f, 0.7f));
+        Def(SpellType.Aguamenti, "Агуаменти", 5f, 28f, 42f, 0.35f, new Color(0.2f, 0.65f, 1f));
+        Def(SpellType.Reducto, "Редукто", 9f, 75f, 46f, 0.4f, new Color(1f, 0.6f, 0.3f));
+        Def(SpellType.Incarcerous, "Инкарцеро", 12f, 12f, 38f, 0.35f, new Color(0.7f, 0.5f, 0.25f));
+        Def(SpellType.Rictusempra, "Риктусемпра", 7f, 20f, 50f, 0.3f, new Color(1f, 0.6f, 0.95f));
+        foreach (var s in catalog) if (s.type >= SpellType.Lumos) s.special = true;
         Slot(SpellType.Patronus).hud = "Патронус";
         Slot(SpellType.Arresto).hud = "Арресто";
         Slot(SpellType.AvadaKedavra).hud = "Авада";
@@ -221,6 +228,7 @@ public class SpellCaster : MonoBehaviour
         var aim = AimPoint();
         BeginCast(aim);
         SFX.Voice(s.type.ToString());
+        if (SagaMagic.Cast(pc, s.type, aim)) return;
         if (s.type == SpellType.Incendio)
         {
             CastIncendio(aim, s.color);
