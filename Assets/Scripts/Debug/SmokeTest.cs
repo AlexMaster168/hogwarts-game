@@ -88,6 +88,13 @@ public partial class SmokeTest : MonoBehaviour
         yield return Frames(30);
         yield return Shot("01_title");
         HUD.I.StartGame();
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmBossPortraits") >= 0)
+        {
+            yield return BossPortraits();
+            Debug.Log($"HM_BOSS_PORTRAITS_RESULT errors={errors} bosses=4 views=8");
+            Application.Quit(errors == 0 ? 0 : 1);
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmSagaOnly") >= 0)
         {
             yield return SagaTest();

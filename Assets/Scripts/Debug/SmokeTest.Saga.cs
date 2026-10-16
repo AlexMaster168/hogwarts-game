@@ -4,6 +4,40 @@ using UnityEngine;
 
 public partial class SmokeTest
 {
+    IEnumerator BossPortraits()
+    {
+        p.health.invulnerable = true;
+        DayNight.I.SetHour(14); DayNight.I.raining = false;
+        foreach (var foe in Enemy.All.ToArray()) if (foe != null) Destroy(foe.gameObject);
+        yield return Frames(3);
+        var steps = new[] { QuestManager.Step.Ch7Boss, QuestManager.Step.Ch8Boss, QuestManager.Step.Ch9Boss, QuestManager.Step.Ch10Boss };
+        for (int ch = 0; ch < steps.Length; ch++)
+        {
+            GameState.Set(GameMode.Play);
+            q.SetStep(steps[ch], false);
+            var boss = q.boss;
+            var at = boss.transform.position;
+            p.Teleport(at + Vector3.forward * 9);
+            boss.aggro = true;
+            yield return Frames(15);
+            HUD.Clear();
+            at = boss.transform.position;
+            bool giant = ch == 1;
+            var look = at + Vector3.up * (giant ? 2.1f : 1.25f);
+            GameState.Set(GameMode.Paused);
+            yield return ShotFrom("chapter-" + (ch + 7) + "-boss", at + new Vector3(giant ? 3.8f : 2.1f, giant ? 3f : 2f, giant ? 7.5f : 5.3f), look);
+            GameState.Set(GameMode.Play);
+            boss.health.current = boss.health.max * 0.6f;
+            yield return Frames(3);
+            HUD.Clear();
+            GameState.Set(GameMode.Paused);
+            at = boss.transform.position;
+            yield return ShotFrom("chapter-" + (ch + 7) + "-boss-shield", at + new Vector3(3f, 2.8f, 7.5f), at + Vector3.up * 1.7f);
+            CheckLocation(boss.IsBossKind && !boss.IsDead, "Portrait boss " + (ch + 7));
+        }
+        GameState.Set(GameMode.Play);
+    }
+
     IEnumerator SagaStep()
     {
         if (q.talkTarget != null) { q.Talk(q.Npc(q.talkTarget)); yield return RunDialogue(); yield break; }

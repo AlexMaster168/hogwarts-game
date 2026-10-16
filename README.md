@@ -302,7 +302,9 @@ BuildGame.bat "D:\Unity\6000.0.77f1\Editor\Unity.exe"
 
 | Узлы сада | Королева пепла |
 | --- | --- |
-| ![Головоломка Сада пепла](docs/screenshots/chapter-7-puzzle.png) | ![Королева пепла](docs/screenshots/chapter-7-boss.png) |
+| ![Головоломка Сада пепла](docs/screenshots/chapter-7-puzzle.png) | ![Королева пепла](docs/screenshots/chapter-7-boss-portrait.png) |
+
+[Босс главы 7 под фазовым щитом — крупный план](docs/screenshots/chapter-7-boss-shield.png)
 
 <a id="chapter8"></a>
 ### Глава VIII. Сердце часовщика
@@ -313,7 +315,9 @@ BuildGame.bat "D:\Unity\6000.0.77f1\Editor\Unity.exe"
 
 | Механизм обсерватории | Бронзовый часовщик |
 | --- | --- |
-| ![Бронзовые узлы и ротор](docs/screenshots/chapter-8-puzzle.png) | ![Бронзовый часовщик](docs/screenshots/chapter-8-boss.png) |
+| ![Бронзовые узлы и ротор](docs/screenshots/chapter-8-puzzle.png) | ![Бронзовый часовщик](docs/screenshots/chapter-8-boss-portrait.png) |
+
+[Босс главы 8 под фазовым щитом — крупный план](docs/screenshots/chapter-8-boss-shield.png)
 
 <a id="chapter9"></a>
 ### Глава IX. Лица в зеркалах
@@ -324,7 +328,9 @@ BuildGame.bat "D:\Unity\6000.0.77f1\Editor\Unity.exe"
 
 | Скрытые надписи | Зеркальный регент |
 | --- | --- |
-| ![Зеркальные узлы](docs/screenshots/chapter-9-puzzle.png) | ![Зеркальный регент](docs/screenshots/chapter-9-boss.png) |
+| ![Зеркальные узлы](docs/screenshots/chapter-9-puzzle.png) | ![Зеркальный регент](docs/screenshots/chapter-9-boss-portrait.png) |
+
+[Босс главы 9 под фазовым щитом — крупный план](docs/screenshots/chapter-9-boss-shield.png)
 
 <a id="chapter10"></a>
 ### Глава X. Последняя страница
@@ -335,7 +341,9 @@ BuildGame.bat "D:\Unity\6000.0.77f1\Editor\Unity.exe"
 
 | Проводники архива | Архивариус гроз |
 | --- | --- |
-| ![Грозовая головоломка](docs/screenshots/chapter-10-puzzle.png) | ![Архивариус гроз](docs/screenshots/chapter-10-boss.png) |
+| ![Грозовая головоломка](docs/screenshots/chapter-10-puzzle.png) | ![Архивариус гроз](docs/screenshots/chapter-10-boss-portrait.png) |
+
+[Босс главы 10 под фазовым щитом — крупный план](docs/screenshots/chapter-10-boss-shield.png)
 
 У каждой новой главы семь этапов: разговор с Фигом → стража → головоломка → память страницы → босс → обратная цепь → возвращение. Прогресс главы и финал сохраняются. Незавершённая головоломка после загрузки начинается сначала.
 
