@@ -5,6 +5,46 @@ using UnityEngine;
 
 public partial class SmokeTest
 {
+    IEnumerator SideMapTest()
+    {
+        SaveGame.TestPath = System.IO.Path.Combine(Application.dataPath, "../Build/Verification/side-map-save.json");
+        GameState.Set(GameMode.Play); p.health.invulnerable = true;
+        DayNight.I.SetHour(13); DayNight.I.raining = false;
+        p.Teleport(WorldBuilder.Courtyard + Vector3.up * .3f);
+        var sq = SideQuests.I;
+        foreach (var quest in sq.all)
+        {
+            quest.state = SQState.Locked;
+            CheckLocation(!sq.Marker(quest).HasValue, "Locked quest hidden: " + quest.id);
+            quest.state = SQState.Available;
+            CheckLocation(sq.Marker(quest).HasValue && Vector3.Distance(sq.Marker(quest).Value, q.Npc(quest.giver).transform.position) < .01f, "Offer at giver: " + quest.id);
+        }
+        CastleMap.I.Open(); CastleMap.I.level = 0; HUD.Clear();
+        yield return Shot("map-side-offers"); CastleMap.I.Close();
+        foreach (var quest in sq.all)
+        {
+            CheckLocation(sq.TryTalk(q.Npc(quest.giver)), "Accept dialogue: " + quest.id);
+            yield return RunDialogue();
+            CheckLocation(sq.Marker(quest).HasValue, "Objective marker: " + quest.id);
+            CastleMap.I.SelectSideQuest(quest);
+            var target = CastleMap.QuestTarget(out var title, out _);
+            CheckLocation(sq.tracked == quest && title == quest.title && target.HasValue && Vector3.Distance(target.Value, sq.Marker(quest).Value) < .01f, "Track from map: " + quest.id);
+            CheckLocation(CastleMap.I.level == CastleMap.TabOf(target.Value), "Correct map tab: " + quest.id);
+        }
+        var moon = sq.all.Find(quest => quest.id == "moon_alohomora");
+        CastleMap.I.SelectSideQuest(moon); CastleMap.I.Open(); CastleMap.I.level = 3; HUD.Clear();
+        yield return Shot("map-side-objectives"); CastleMap.I.Close();
+        var nearest = sq.Marker(moon);
+        foreach (var statue in sq.statues.ToArray()) statue.Collect();
+        yield return Frames(3);
+        CheckLocation(nearest.HasValue && moon.state == SQState.Ready && sq.statues.Count == 0, "Collecting statues completes objective");
+        CheckLocation(Vector3.Distance(sq.Marker(moon).Value, q.Npc(moon.giver).transform.position) < .01f, "Ready marker returns to Moon");
+        CastleMap.I.SelectSideQuest(moon); CastleMap.I.Open(); CastleMap.I.level = CastleMap.TabOf(sq.Marker(moon).Value); HUD.Clear();
+        yield return Shot("map-side-return"); CastleMap.I.Close();
+        sq.TryTalk(q.Npc(moon.giver)); yield return RunDialogue();
+        CheckLocation(moon.state == SQState.Done && !sq.Marker(moon).HasValue, "Completed quest marker disappears");
+    }
+
     IEnumerator WaitShot(SpellSlot slot)
     {
         float end = Time.realtimeSinceStartup + 5;

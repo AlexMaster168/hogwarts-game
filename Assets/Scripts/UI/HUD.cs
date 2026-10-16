@@ -61,6 +61,8 @@ public class HUD : MonoBehaviour
                 if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) PickGender(false);
                 if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) PickGender(true);
                 for (int i = 0; i < 4; i++) if (Input.GetKeyDown(KeyCode.Alpha3 + i)) PickDifficulty(i);
+                if (Input.GetKeyDown(KeyCode.Q)) PickSkin(GameManager.I.player.skin - 1);
+                if (Input.GetKeyDown(KeyCode.E)) PickSkin(GameManager.I.player.skin + 1);
                 if (enter || Input.GetKeyDown(KeyCode.Space)) StartGame();
                 break;
             case GameMode.Play:
@@ -271,28 +273,48 @@ public class HUD : MonoBehaviour
         }
     }
 
+    public void PickSkin(int value)
+    {
+        if (GameState.Mode != GameMode.Title) return;
+        int count = PlayerController.SkinNames.Length;
+        GameManager.I.player.SetSkin((value % count + count) % count);
+    }
+
     void DrawTitle()
     {
         float W = Screen.width, H = Screen.height;
         GUI.DrawTexture(new Rect(0, 0, W * 0.7f, H), fadeLeft);
-        Text(new Rect(90 * S, H * 0.2f, W, 120 * S), "HOGWARTS LEGACY", sHuge, Gold);
-        Text(new Rect(96 * S, H * 0.2f + 110 * S, W, 60 * S), "мини-версия: метла, заклинания, Ранрок и Руквуд", sBig, new Color(0.85f, 0.85f, 0.95f));
+        float top = H * 0.1f;
+        Text(new Rect(90 * S, top, W, 120 * S), "HOGWARTS LEGACY", sHuge, Gold);
+        Text(new Rect(96 * S, top + 110 * S, W, 60 * S), "мини-версия: метла, заклинания, Ранрок и Руквуд", sBig, new Color(0.85f, 0.85f, 0.95f));
         float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
-        Text(new Rect(96 * S, H * 0.2f + 390 * S, W, 50 * S), "ENTER — новая игра · F9 — загрузить прогресс", sMed, new Color(1, 1, 1, pulse));
-        Text(new Rect(96 * S, H * 0.2f + 270 * S, 300 * S, 40 * S), "Сложность:", sSmall, new Color(0.85f, 0.85f, 0.95f));
-        DifficultyRow(250 * S, H * 0.2f + 260 * S, true);
+        Text(new Rect(96 * S, top + 550 * S, W, 50 * S), "ENTER — новая игра · F9 — загрузить прогресс", sMed, new Color(1, 1, 1, pulse));
+        Text(new Rect(96 * S, top + 475 * S, 300 * S, 40 * S), "Сложность:", sSmall, new Color(0.85f, 0.85f, 0.95f));
+        DifficultyRow(250 * S, top + 465 * S, true);
         // Выбор героя: мальчик или девочка.
         bool fem = GameManager.I.player.female;
-        Text(new Rect(96 * S, H * 0.2f + 190 * S, 300 * S, 40 * S), "Твой герой:", sSmall, new Color(0.85f, 0.85f, 0.95f));
+        Text(new Rect(96 * S, top + 190 * S, 300 * S, 40 * S), "Твой герой:", sSmall, new Color(0.85f, 0.85f, 0.95f));
         string[] opts = { "Мальчик [1]", "Девочка [2]" };
         for (int i = 0; i < 2; i++)
         {
-            var b = new Rect(250 * S + i * 250 * S, H * 0.2f + 180 * S, 230 * S, 60 * S);
+            var b = new Rect(250 * S + i * 250 * S, top + 180 * S, 230 * S, 60 * S);
             bool on = fem == (i == 1);
             Box(b, on ? new Color(0.55f, 0.42f, 0.15f, 0.9f) : Panel);
             if (on) Box(new Rect(b.x, b.yMax - 4 * S, b.width, 4 * S), Gold);
             Text(b, opts[i], sMed, on ? Color.white : new Color(0.75f, 0.75f, 0.8f), TextAnchor.MiddleCenter);
             if (GUI.Button(b, GUIContent.none, GUIStyle.none)) PickGender(i == 1);
+        }
+        Box(new Rect(86 * S, top + 245 * S, 830 * S, 205 * S), new Color(0.035f, 0.045f, 0.075f, 1));
+        Text(new Rect(96 * S, top + 250 * S, 800 * S, 35 * S), "Скин героя · Q / E — переключить", sSmall, Gold);
+        for (int i = 0; i < PlayerController.SkinNames.Length; i++)
+        {
+            var b = new Rect((96 + (i % 3) * 270) * S, top + (290 + (i / 3) * 50) * S, 260 * S, 44 * S);
+            bool on = GameManager.I.player.skin == i;
+            Box(b, on ? Gold : new Color(0.22f, 0.27f, 0.35f, 1));
+            Box(new Rect(b.x + 2 * S, b.y + 2 * S, b.width - 4 * S, b.height - 4 * S),
+                on ? new Color(0.35f, 0.23f, 0.065f, 1) : new Color(0.09f, 0.12f, 0.18f, 1));
+            Text(b, PlayerController.SkinNames[i], sSmall, Color.white, TextAnchor.MiddleCenter);
+            if (GUI.Button(b, GUIContent.none, GUIStyle.none)) PickSkin(i);
         }
         DrawHeroPreview(new Rect(W - 520 * S, H * 0.12f, 420 * S, 620 * S));
         var r = new Rect(90 * S, H - 215 * S, 1000 * S, 160 * S);

@@ -260,8 +260,10 @@ public static partial class WorldBuilder
         g = Prims.Group(g, "DoorFrame");
         var rot = Quaternion.LookRotation(along);
         foreach (int s in new[] { -1, 1 })
-            Prims.Box(g, c + along * (s * 1.7f) + Vector3.up * 2.05f, new Vector3(t + 0.3f, 4.1f, 0.4f), woodDark, false, rot).name = "DoorPost";
-        Prims.Box(g, c + Vector3.up * 4.3f, new Vector3(t + 0.3f, 0.4f, 3.8f), woodDark, false, rot).name = "DoorLintel";
+            // Откос стены находится в 1.5 м от центра: дерево выступает в проём
+            // на 6 см, чтобы внутренние грани дерева и камня не совпадали.
+            Prims.Box(g, c + along * (s * 1.67f) + Vector3.up * 2.02f, new Vector3(t + 0.3f, 4.04f, 0.46f), woodDark, false, rot).name = "DoorPost";
+        Prims.Box(g, c + Vector3.up * 4.24f, new Vector3(t + 0.3f, 0.4f, 3.8f), woodDark, false, rot).name = "DoorLintel";
     }
 
     // ---------------- МОСТ ----------------

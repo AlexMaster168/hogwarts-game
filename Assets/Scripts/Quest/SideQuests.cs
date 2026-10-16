@@ -347,16 +347,30 @@ public class SideQuests : MonoBehaviour
 
     // Маркер отслеживаемого поручения (синий ромб на HUD).
     public Vector3? TrackedMarker()
+        => Marker(tracked);
+
+    // Единая цель для карты и HUD, без смены отслеживаемого задания.
+    public Vector3? Marker(SideQuest q)
     {
-        var q = tracked;
-        if (q == null || q.state == SQState.Done) return null;
-        if (q.state == SQState.Ready)
+        if (q == null || q.state == SQState.Done || q.state == SQState.Locked) return null;
+        if (q.state == SQState.Ready || q.state == SQState.Available)
         {
             var n = QuestManager.I.Npc(q.giver);
             return n != null ? n.transform.position : null;
         }
         switch (q.id)
         {
+            case "moon_alohomora":
+            {
+                Vector3? nearest = null; float distance = float.MaxValue;
+                foreach (var statue in statues)
+                {
+                    if (statue == null) continue;
+                    float d = (statue.transform.position - P.transform.position).sqrMagnitude;
+                    if (d < distance) { distance = d; nearest = statue.transform.position; }
+                }
+                return nearest;
+            }
             case "sharp_herbs":
                 Vector3? best = null;
                 float bd = float.MaxValue;

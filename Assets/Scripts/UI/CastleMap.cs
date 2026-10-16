@@ -13,6 +13,7 @@ public class CastleMap : MonoBehaviour
     Vector2 scroll;
     float zoom = 1;
     Vector2 pan;
+    SideQuest selectedQuest;
     GUIStyle label, small, head;
     Rect canvas;
     public static readonly Rect Bounds = new Rect(-55,-30,110,215);
@@ -30,9 +31,17 @@ public class CastleMap : MonoBehaviour
         zoom=1; pan=Vector2.zero; ChangedFrame=Time.frameCount; GameState.Set(GameMode.Map);
     }
     public void Close(){ChangedFrame=Time.frameCount;GameState.Set(GameMode.Play);}
-    public void Select(int index){selected=index;selectedWp=-1;selectedPoint=null;target=CastleLocations.All[index].spawn;}
-    public void SelectWaypoint(int index){selectedWp=index;selected=-1;selectedPoint=null;target=RoomServices.Waypoints[index].pos;}
-    public void SelectPoint(Vector3 p){selectedPoint=RoomServices.SafeOutdoor(p);selected=-1;selectedWp=-1;target=selectedPoint;}
+    public void Select(int index){selectedQuest=null;selected=index;selectedWp=-1;selectedPoint=null;target=CastleLocations.All[index].spawn;}
+    public void SelectWaypoint(int index){selectedQuest=null;selectedWp=index;selected=-1;selectedPoint=null;target=RoomServices.Waypoints[index].pos;}
+    public void SelectPoint(Vector3 p){selectedQuest=null;selectedPoint=RoomServices.SafeOutdoor(p);selected=-1;selectedWp=-1;target=selectedPoint;}
+    public void SelectSideQuest(SideQuest quest)
+    {
+        var pos=SideQuests.I.Marker(quest);
+        if(!pos.HasValue)return;
+        selectedQuest=quest;selected=selectedWp=-1;selectedPoint=null;target=null;
+        if(quest.state==SQState.Active||quest.state==SQState.Ready)SideQuests.I.Focus(quest);
+        level=TabOf(pos.Value);pan=Vector2.zero;zoom=1;
+    }
     public static Vector3 Unproject(Vector2 v,Rect area,Rect world)
         => new Vector3(world.xMin+(v.x-area.x)/area.width*world.width,0,world.yMin+(area.yMax-v.y)/area.height*world.height);
     public static Vector2 Project(Vector3 p, Rect area, Rect world)
@@ -148,9 +157,28 @@ public class CastleMap : MonoBehaviour
     void DrawList(PlayerController pc)
     {
         var listRect=new Rect(Screen.width-300,100,280,Screen.height-300);
-        int rows=RoomServices.Waypoints.Length+CastleLocations.All.Count+2;
+        int rows=RoomServices.Waypoints.Length+CastleLocations.All.Count+2+(SideQuests.I!=null?SideQuests.I.all.Count*2+1:0);
         scroll=GUI.BeginScrollView(listRect,scroll,new Rect(0,0,255,rows*40));
         float y=0;
+        if(SideQuests.I!=null)
+        {
+            GUI.Label(new Rect(0,y,250,30),"Побочные задания",head);y+=32;
+            foreach(var quest in SideQuests.I.all)
+            {
+                if(!SideQuests.I.Marker(quest).HasValue)continue;
+                string state=quest.state==SQState.Available?"? Взять":quest.state==SQState.Ready?"! Сдать":"◆ Выполнить";
+                var questStyle=new GUIStyle(small){alignment=TextAnchor.MiddleCenter,fontSize=14};questStyle.normal.textColor=Color.white;
+                string caption=state+": "+quest.title+"\n"+quest.giverName;
+                float height=Mathf.Max(48,questStyle.CalcHeight(new GUIContent(caption),238)+12);
+                var button=new Rect(0,y,250,height);
+                Box(button,quest.state==SQState.Ready?new Color(.55f,1f,.65f):WpOn);
+                Box(new Rect(button.x+2,button.y+2,button.width-4,button.height-4),new Color(.06f,.08f,.12f,1));
+                GUI.Label(new Rect(button.x+6,button.y+6,button.width-12,button.height-12),caption,questStyle);
+                if(GUI.Button(button,GUIContent.none,GUIStyle.none))SelectSideQuest(quest);
+                y+=height+6;
+            }
+            y+=10;
+        }
         if(level>=Outskirts)
         {
             GUI.Label(new Rect(0,y,250,30),"Точки перемещения",head);y+=32;
@@ -172,6 +200,12 @@ public class CastleMap : MonoBehaviour
                 y+=40;
             }
         GUI.EndScrollView();
+
+        if(selectedQuest!=null)
+        {
+            GUI.Label(new Rect(Screen.width-300,Screen.height-190,275,120),selectedQuest.title+"\n"+selectedQuest.desc+"\n"+selectedQuest.Progress,small);
+            return;
+        }
 
         string title=null,detail=null;System.Action go=null;
         if(selected>=0)
@@ -289,6 +323,7 @@ public class CastleMap : MonoBehaviour
 
     void Markers(Rect area,Rect world,int floor)
     {
+        SideQuestMarkers(area,world,floor);
         bool outside=floor>=Outskirts;
         var p=GameManager.I.player.transform.position;
         if(outside || CastleLocations.Floor(p)==floor)
@@ -327,6 +362,35 @@ public class CastleMap : MonoBehaviour
                 Box(lr,new Color(0,0,0,.7f));GUI.Label(lr,lbl,st);
             }
         }
+    }
+
+    void SideQuestMarkers(Rect area,Rect world,int floor)
+    {
+        var sq=SideQuests.I;if(sq==null)return;
+        bool big=area.width>=300;
+        foreach(var quest in sq.all)
+        {
+            // Выбранное поручение ниже рисуется как основная цель с пульсацией.
+            if(quest==sq.tracked)continue;
+            var pos=sq.Marker(quest);if(!pos.HasValue)continue;
+            int tab=TabOf(pos.Value);
+            if(tab!=floor&&!(tab>=Outskirts&&floor>=Outskirts))continue;
+            var v=Project(pos.Value,area,world);if(!area.Contains(v))continue;
+            float radius=big?10:6;
+            var r=new Rect(v.x-radius,v.y-radius,radius*2,radius*2);
+            Box(new Rect(r.x-2,r.y-2,r.width+4,r.height+4),Color.black);
+            Color color=quest.state==SQState.Ready?new Color(.35f,1f,.5f):WpOn;
+            Box(r,color);
+            if(big)
+            {
+                var style=new GUIStyle(label){fontStyle=FontStyle.Bold};style.normal.textColor=Color.black;
+                GUI.Label(r,quest.state==SQState.Available?"?":quest.state==SQState.Ready?"!":"◆",style);
+                taken.Add(r);
+                queue.Add((quest.title+(quest.state==SQState.Ready?" — сдать":quest.state==SQState.Available?" — взять":""),v,color,0));
+                if(GUI.Button(new Rect(r.x-3,r.y-3,r.width+6,r.height+6),GUIContent.none,GUIStyle.none))SelectSideQuest(quest);
+            }
+        }
+        if(big)FlushLabels(area);
     }
 
     GUIStyle qTag, hereTag;
@@ -378,7 +442,7 @@ public class CastleMap : MonoBehaviour
         if(sq!=null&&sq.tracked!=null)
         {
             var m=sq.TrackedMarker();
-            if(m.HasValue){title=sq.tracked.title;col=new Color(.45f,.85f,1f);return m;}
+            if(m.HasValue){title=sq.tracked.title;col=sq.tracked.state==SQState.Ready?new Color(.35f,1f,.5f):new Color(.45f,.85f,1f);return m;}
         }
         var q=QuestManager.I;
         if(q!=null&&q.hasMarker){title=q.title;return q.markerPos;}

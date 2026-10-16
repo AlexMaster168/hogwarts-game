@@ -87,7 +87,62 @@ public partial class SmokeTest : MonoBehaviour
         p = gm.player;
         yield return Frames(30);
         yield return Shot("01_title");
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmTitleDoors") >= 0)
+        {
+            SaveGame.TestPath = Path.Combine(Application.dataPath, "../Build/Verification/title-doors-save.json");
+            foreach (bool female in new[] { false, true })
+            {
+                p.SetGender(female);
+                for (int i = 0; i < PlayerController.SkinNames.Length; i++)
+                {
+                    HUD.I.PickSkin(i);
+                    yield return Frames(3);
+                    CheckLocation(p.skin == i && p.female == female && p.visual != null, "Title skin selection " + female + ":" + i);
+                }
+                HUD.I.PickSkin(female ? 1 : 0);
+                yield return Shot(female ? "title-skins-girl" : "title-skins-boy");
+            }
+            HUD.I.PickSkin(-1); CheckLocation(p.skin == 8, "Skin selection wraps backwards");
+            HUD.I.PickSkin(9); CheckLocation(p.skin == 0, "Skin selection wraps forwards");
+            HUD.I.StartGame();
+            HUD.I.PickSkin(4); CheckLocation(p.skin == 0, "Skin selection locked after start");
+            DayNight.I.SetHour(13); DayNight.I.raining = false;
+            int count = 0;
+            foreach (Transform frame in WorldBuilder.Root.GetComponentsInChildren<Transform>())
+            {
+                if (frame.name != "DoorFrame") continue;
+                var lintel = frame.Find("DoorLintel").GetComponent<Renderer>().bounds;
+                CheckLocation(lintel.min.y < 4.06f && lintel.min.y > 4f, "Lintel reveal separated from stone underside");
+                foreach (Transform post in frame)
+                {
+                    if (post.name != "DoorPost") continue;
+                    var bounds = post.GetComponent<Renderer>().bounds;
+                    CheckLocation(bounds.max.y <= lintel.min.y + .001f, "Posts below lintel");
+                    CheckLocation(Mathf.Abs(post.localScale.z - .46f) < .001f, "Jamb reveal projects ahead of stone");
+                }
+                Vector3 center = frame.Find("DoorLintel").position; center.y = 0;
+                Vector3 along = frame.Find("DoorLintel").forward;
+                Vector3 normal = Vector3.Cross(along, Vector3.up);
+                foreach (int side in new[] { -1, 1 })
+                    yield return ShotFrom("door-" + count + "-" + (side < 0 ? "inside" : "outside"),
+                        center + normal * (side * 5) + along * .7f + Vector3.up * 2.7f,
+                        center + Vector3.up * 2.8f);
+                count++;
+            }
+            CheckLocation(count == 5, "Five hall doors checked on both sides");
+            yield return RoomsVisibleTest();
+            Debug.Log($"HM_TITLE_DOORS_RESULT errors={errors} skins=18 doors={count} views={count * 2}");
+            Application.Quit(errors == 0 ? 0 : 1);
+            yield break;
+        }
         HUD.I.StartGame();
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmSideMap") >= 0)
+        {
+            yield return SideMapTest();
+            Debug.Log($"HM_SIDE_MAP_RESULT errors={errors} quests={SideQuests.I.all.Count}");
+            Application.Quit(errors == 0 ? 0 : 1);
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmAimOnly") >= 0)
         {
             yield return AimHitTest();
