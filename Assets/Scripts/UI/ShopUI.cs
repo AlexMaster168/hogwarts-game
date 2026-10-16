@@ -11,6 +11,7 @@ public class ShopUI : MonoBehaviour
     float S;
     Texture2D white;
     Vector2 shopScroll, inventoryScroll;
+    bool skinPicker;
 
     static readonly Color Gold = new(1f, 0.83f, 0.45f);
 
@@ -157,6 +158,15 @@ public class ShopUI : MonoBehaviour
         float x = win.x + 30 * S, y = win.y + 95 * S, colW = 560 * S;
         inventoryScroll = GUI.BeginScrollView(new Rect(win.x + 10 * S, y, win.width - 20 * S, win.height - 155 * S), inventoryScroll,
             new Rect(win.x + 10 * S, y, win.width - 45 * S, Mathf.Max(1000, 500 + inv.owned.Count * 48, 700 + c.Pages * 65) * S));
+        Label(new Rect(x, y, 170 * S, 34 * S), "Скин героя", sName, Gold);
+        if (GUI.Button(new Rect(x + 170 * S, y, 350 * S, 34 * S), PlayerController.SkinNames[p.skin] + "  ▾", sBtn)) skinPicker = !skinPicker;
+        y += 44 * S;
+        if (skinPicker)
+        {
+            int selectedSkin = GUI.SelectionGrid(new Rect(x, y, 540 * S, 110 * S), p.skin, PlayerController.SkinNames, 3, GUI.skin.button);
+            if (selectedSkin != p.skin) { p.SetSkin(selectedSkin); skinPicker = false; }
+            y += 120 * S;
+        }
         Label(new Rect(x, y, colW, 34 * S), "Снаряжение", sName, Gold);
         y += 40 * S;
         foreach (var kind in new[] { ItemKind.Robe, ItemKind.Hat, ItemKind.Gloves, ItemKind.Broom, ItemKind.Artifact })

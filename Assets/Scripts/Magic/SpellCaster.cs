@@ -7,6 +7,7 @@ public class SpellSlot
     public string name, hud;
     public float cooldown, cd, damage, speed, size;
     public bool learned, unforgivable, special;
+    public bool pending;
     public Color color;
 }
 
@@ -150,40 +151,45 @@ public class SpellCaster : MonoBehaviour
 
     void UpdateTarget()
     {
-        Targetable best = null;
-        float bestScore = float.MaxValue;
+        target = null;
         var cam = pc.cam.transform;
-        foreach (var t in Targetable.All)
+        if (WandAim.Trace(cam.position, cam.forward, 150f, pc.transform, 0f, out var hit))
         {
-            if (!t.Alive) continue;
-            var e = t.GetComponent<Enemy>();
-            var to = t.AimPoint - cam.position;
-            float d = to.magnitude;
-            if (d > 45f) continue;
-            float ang = Vector3.Angle(cam.forward, to);
-            if (ang > 22f) continue;
-            // Своего под Империо выбираем, только если больше целиться не в кого.
-            float score = ang + d * 0.3f + (e != null && e.Charmed ? 1000f : 0f);
-            if (score < bestScore) { bestScore = score; best = t; }
+            var candidate = hit.collider.GetComponentInParent<Targetable>();
+            if (candidate != null && candidate.Alive) target = candidate;
         }
-        target = best;
     }
 
     public Vector3 AimPoint()
     {
-        if (target != null) return target.AimPoint;
         var cam = pc.cam.transform;
-        var hits = Physics.RaycastAll(cam.position, cam.forward, 200f, ~0, QueryTriggerInteraction.Ignore);
-        float best = float.MaxValue;
-        Vector3 p = cam.position + cam.forward * 100f;
-        foreach (var h in hits)
-        {
-            if (h.collider.transform.IsChildOf(pc.transform)) continue;
-            if (h.distance < best) { best = h.distance; p = h.point; }
-        }
-        return p;
+        return WandAim.Trace(cam.position, cam.forward, 150f, pc.transform, 0f, out var hit)
+            ? hit.point : cam.position + cam.forward * 150f;
     }
 
+    public Vector3 WandImpact(out bool valid, out bool blocked)
+    {
+        var aim = AimPoint();
+        var from = wandTip.position;
+        var delta = aim - from;
+        valid = false; blocked = false;
+        if (delta.sqrMagnitude < 0.001f) return aim;
+        if (WandAim.Trace(from, delta.normalized, delta.magnitude + 0.5f, pc.transform, 0.12f, out var hit))
+        {
+            valid = hit.collider.GetComponentInParent<ISpellTarget>() != null;
+            blocked = !valid && hit.distance < delta.magnitude - 0.6f;
+            return hit.point;
+        }
+        return aim;
+    }
+
+    public bool HasLineTo(Vector3 point, Transform destination)
+    {
+        var from = wandTip.position;
+        var delta = point - from;
+        if (!WandAim.Trace(from, delta.normalized, delta.magnitude, pc.transform, 0f, out var hit)) return true;
+        return hit.collider.transform.IsChildOf(destination);
+    }
     void BeginCast(Vector3 aim)
     {
         armRaise = 1f;
@@ -214,7 +220,7 @@ public class SpellCaster : MonoBehaviour
         var from = wandTip.position;
         var color = finisher ? new Color(1f, 0.65f, 0.25f) : BasicColor;
         var p = SpellProjectile.Spawn(SpellType.Basic, from, aim - from, pc.gameObject, (finisher ? 26f : 10f) * Dmg, finisher ? 56f : 48f, color, false,
-            target != null ? target.transform : null, 6f, false, finisher ? 0.4f : 0.22f);
+            null, 0f, false, finisher ? 0.4f : 0.22f);
         p.finisher = finisher;
         if (target != null) p.homingHeight = target.aimHeight;
         SFX.Play(finisher ? "heavy" : "cast", finisher ? 0.5f : 0.35f);
@@ -223,32 +229,41 @@ public class SpellCaster : MonoBehaviour
 
     public void TryCast(SpellSlot s)
     {
-        if (!s.learned || s.cd > 0) return;
-        s.cd = pc.inventory != null && pc.inventory.Focused ? 0.25f : s.cooldown * (pc.inventory != null ? pc.inventory.CooldownMult : 1f);
+        if (!s.learned || s.cd > 0 || s.pending) return;
+        float cost = pc.inventory != null && pc.inventory.Focused ? 0.25f : s.cooldown * (pc.inventory != null ? pc.inventory.CooldownMult : 1f);
         var aim = AimPoint();
         BeginCast(aim);
         SFX.Voice(s.type.ToString());
-        if (SagaMagic.Cast(pc, s.type, aim)) return;
+        int previousRune = QuestManager.I.sagaOrder;
+        if (SagaMagic.Cast(pc, s.type, aim))
+        {
+            if (s.type == SpellType.Lumos || QuestManager.I.sagaOrder != previousRune) s.cd = cost;
+            return;
+        }
         if (s.type == SpellType.Incendio)
         {
-            CastIncendio(aim, s.color);
+            if (CastIncendio(aim, s.color)) s.cd = cost;
             return;
         }
         if (s.type == SpellType.Arresto)
         {
-            CastArresto(aim, s);
+            if (CastArresto(aim, s)) s.cd = cost;
             return;
         }
         if (s.type == SpellType.Patronus)
         {
-            PatronusSpirit.Spawn(pc.transform.position + pc.transform.forward * 1.2f, aim - pc.transform.position, s.damage * Dmg, pc.gameObject);
+            s.pending = true;
+            PatronusSpirit.Spawn(pc.transform.position + pc.transform.forward * 1.2f, aim - pc.transform.position, s.damage * Dmg, pc.gameObject,
+                hit => { s.pending = false; if (hit) s.cd = cost; });
             SFX.Play("ancient", 0.7f);
             HUD.ShowToast("Экспекто Патронум!", s.color);
             return;
         }
         var from = wandTip.position;
+        s.pending = true;
         var p = SpellProjectile.Spawn(s.type, from, aim - from, pc.gameObject, s.damage * Dmg, s.speed, s.color, false,
-            target != null ? target.transform : null, 6f, false, s.size);
+            null, 0f, false, s.size);
+        p.resolved = hit => { s.pending = false; if (hit) s.cd = cost; };
         if (target != null) p.homingHeight = target.aimHeight;
         if (s.unforgivable)
         {
@@ -259,12 +274,13 @@ public class SpellCaster : MonoBehaviour
     }
 
     // Арресто Моментум: замедляет всех врагов вокруг точки прицела.
-    void CastArresto(Vector3 aim, SpellSlot s)
+    bool CastArresto(Vector3 aim, SpellSlot s)
     {
         int n = 0;
         foreach (var e in Enemy.All.ToArray())
         {
             if (e == null || e.IsDead || e.Charmed || (e.transform.position - aim).magnitude > 9f) continue;
+            if (!HasLineTo(e.targetable.AimPoint, e.transform)) continue;
             e.OnSpellHit(new SpellHit { type = SpellType.Arresto, damage = s.damage * Dmg, point = e.targetable.AimPoint, dir = Vector3.down, source = pc.gameObject });
             n++;
         }
@@ -273,10 +289,12 @@ public class SpellCaster : MonoBehaviour
         FX.Flash(aim + Vector3.up, s.color, 4f, 14f, 0.5f);
         SFX.Play("freeze", 0.7f);
         if (n > 0) HUD.Float(aim + Vector3.up * 2.5f, "Замедлены: " + n, s.color);
+        return n > 0;
     }
 
-    void CastIncendio(Vector3 aim, Color c)
+    bool CastIncendio(Vector3 aim, Color c)
     {
+        int hits = 0;
         var origin = pc.transform.position + Vector3.up * 1.2f;
         var dir = aim - origin;
         var flat = new Vector3(dir.x, 0, dir.z).normalized;
@@ -286,25 +304,32 @@ public class SpellCaster : MonoBehaviour
             var to = t.AimPoint - origin;
             var tf = new Vector3(to.x, 0, to.z);
             if (to.magnitude > 9f || Vector3.Angle(flat, tf) > 55f) continue;
+            if (!HasLineTo(t.AimPoint, t.transform)) continue;
             t.Target?.OnSpellHit(new SpellHit { type = SpellType.Incendio, damage = 25f * Dmg, point = t.AimPoint, dir = to.normalized, source = pc.gameObject });
+            if (t.Target != null) hits++;
         }
         FX.Cone(wandTip.position, dir.normalized, c);
         FX.Flash(wandTip.position + flat * 3f, c, 5f, 12f, 0.4f);
         SFX.Play("fire", 0.8f);
+        return hits > 0;
     }
 
     public void CastAncient()
     {
         if (!pc.ancientUnlocked || pc.ancient < 100f) return;
-        pc.ancient = 0f;
         var aim = AimPoint();
         BeginCast(aim);
         var c = new Color(0.4f, 0.8f, 1f);
+        int hits = 0;
         foreach (var t in Targetable.All.ToArray())
         {
             if (!t.Alive || (t.AimPoint - aim).magnitude > 7f) continue;
+            if (!HasLineTo(t.AimPoint, t.transform)) continue;
             t.Target?.OnSpellHit(new SpellHit { type = SpellType.Ancient, damage = 150f * Dmg, point = t.AimPoint, dir = (t.AimPoint - wandTip.position).normalized, source = pc.gameObject });
+            if (t.Target != null) hits++;
         }
+        if (hits == 0) return;
+        pc.ancient = 0f;
         FX.Burst(aim, c, 120, 16f, 1.4f, 1.1f, -0.3f);
         FX.Burst(aim, new Color(1f, 0.85f, 0.4f), 60, 8f, 0.8f, 1.2f, -0.6f);
         FX.Shockwave(aim - Vector3.up, c, 7f);

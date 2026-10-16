@@ -257,10 +257,11 @@ public static partial class WorldBuilder
     // Деревянная рама дверного проёма (ширина 3, высота 4.1) с обеих сторон стены.
     static void DoorFrame(Transform g, Vector3 c, Vector3 along, float t)
     {
+        g = Prims.Group(g, "DoorFrame");
         var rot = Quaternion.LookRotation(along);
         foreach (int s in new[] { -1, 1 })
-            Prims.Box(g, c + along * (s * 1.7f) + Vector3.up * 2.15f, new Vector3(t + 0.3f, 4.3f, 0.4f), woodDark, false, rot);
-        Prims.Box(g, c + Vector3.up * 4.3f, new Vector3(t + 0.3f, 0.4f, 3.8f), woodDark, false, rot);
+            Prims.Box(g, c + along * (s * 1.7f) + Vector3.up * 2.05f, new Vector3(t + 0.3f, 4.1f, 0.4f), woodDark, false, rot).name = "DoorPost";
+        Prims.Box(g, c + Vector3.up * 4.3f, new Vector3(t + 0.3f, 0.4f, 3.8f), woodDark, false, rot).name = "DoorLintel";
     }
 
     // ---------------- МОСТ ----------------

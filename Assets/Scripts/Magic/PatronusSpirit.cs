@@ -9,10 +9,14 @@ public class PatronusSpirit : MonoBehaviour
     float t, dmg;
     GameObject owner;
     readonly HashSet<Enemy> hit = new();
+    System.Action<bool> resolved;
+    bool reported;
+    void Report(bool success) { if (reported) return; reported = true; resolved?.Invoke(success); }
+    void OnDestroy() { Report(false); }
     Transform body;
     Transform[] legs;
 
-    public static void Spawn(Vector3 from, Vector3 dir, float dmg, GameObject owner)
+    public static void Spawn(Vector3 from, Vector3 dir, float dmg, GameObject owner, System.Action<bool> resolved = null)
     {
         dir.y = 0;
         if (dir.sqrMagnitude < 0.01f) dir = Vector3.forward;
@@ -23,6 +27,7 @@ public class PatronusSpirit : MonoBehaviour
         p.dir = dir.normalized;
         p.dmg = dmg;
         p.owner = owner;
+        p.resolved = resolved;
         p.Build();
     }
 
@@ -72,6 +77,7 @@ public class PatronusSpirit : MonoBehaviour
             if (d.magnitude > 3.2f) continue;
             hit.Add(e);
             e.OnSpellHit(new SpellHit { type = SpellType.Patronus, damage = dmg, point = e.targetable.AimPoint, dir = dir, source = owner });
+            Report(true);
         }
         if (t > 1.8f)
         {

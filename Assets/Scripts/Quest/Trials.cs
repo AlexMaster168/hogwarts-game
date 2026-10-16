@@ -273,6 +273,9 @@ public class TrialBrazier : MonoBehaviour, ISpellTarget
         b.target.health = h;
         b.target.displayName = "Жаровня";
         b.target.aimHeight = 1.4f;
+        var aimCollider = go.AddComponent<SphereCollider>();
+        aimCollider.center = Vector3.up * 1.4f;
+        aimCollider.radius = 0.45f;
         b.target.enabled = false;
         b.glow = go.AddComponent<Light>();
         b.glow.type = LightType.Point;

@@ -69,6 +69,16 @@ public class PlayerController : MonoBehaviour, ISpellTarget
     }
 
     public bool female;
+    public int skin;
+    public static readonly string[] SkinNames = { "Школьный", "Аврор", "Следопыт", "Теневой ниндзя", "Профессор", "Праздничный", "Зельевар", "Восточный маг", "Путешественник" };
+    static readonly string[] MaleSkins = { "rpg_wizard", "oldclassy_male", "rpg_rogue", "ninja_male", "doctor_male_old", "suit_male", "chef_male", "kimono_male", "casual_male" };
+    static readonly string[] FemaleSkins = { "witch", "oldclassy_female", "casual2_female", "ninja_male", "casual3_female", "suit_female", "worker_female", "kimono_female", "casual_female" };
+    public void SetSkin(int value)
+    {
+        skin = Mathf.Clamp(value, 0, SkinNames.Length - 1);
+        SetGender(female, true);
+        if (caster != null) caster.wandTip = parts.wandTip;
+    }
 
     // Мальчик — модель волшебника, девочка — ведьмы. Шарф и кончик палочки переезжают на новую модель.
     public void SetGender(bool f, bool force = false)
@@ -86,7 +96,8 @@ public class PlayerController : MonoBehaviour, ISpellTarget
         var pos = model.localPosition;
         model.localRotation = Quaternion.identity;
         model.localPosition = Vector3.zero;
-        visual = CharacterVisual.Attach(model, f ? "witch" : "rpg_wizard", f ? 1.7f : 1.75f, parts, true);
+        string role = (f ? FemaleSkins : MaleSkins)[Mathf.Clamp(skin, 0, SkinNames.Length - 1)];
+        visual = CharacterVisual.Attach(model, role, f ? 1.7f : 1.75f, parts, true);
         model.localRotation = rot;
         model.localPosition = pos;
         if (visual != null) visual.broom = broom.transform;

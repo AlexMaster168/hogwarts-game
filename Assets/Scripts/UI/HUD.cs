@@ -378,7 +378,17 @@ public class HUD : MonoBehaviour
         // Прицел и счётчик комбо базовой атаки.
         if (GameState.Playing && !pc.onBroom)
         {
-            Box(new Rect(Screen.width / 2f - 2 * S, Screen.height / 2f - 2 * S, 4 * S, 4 * S), new Color(1, 1, 1, 0.8f));
+            var impact = pc.caster.WandImpact(out bool validHit, out bool blocked);
+            if (ToScreen(cam, impact, out var aimScreen))
+            {
+                var color = blocked ? new Color(1f, 0.35f, 0.25f) : validHit ? new Color(0.4f, 1f, 0.5f) : Color.white;
+                float gap = 4 * S, arm = 7 * S, thick = 2 * S;
+                Box(new Rect(aimScreen.x - gap - arm, aimScreen.y - S, arm, thick), color);
+                Box(new Rect(aimScreen.x + gap, aimScreen.y - S, arm, thick), color);
+                Box(new Rect(aimScreen.x - S, aimScreen.y - gap - arm, thick, arm), color);
+                Box(new Rect(aimScreen.x - S, aimScreen.y + gap, thick, arm), color);
+                Box(new Rect(aimScreen.x - S, aimScreen.y - S, thick, thick), color);
+            }
             int combo = pc.caster.Combo;
             if (combo > 0)
             {
@@ -464,7 +474,7 @@ public class HUD : MonoBehaviour
         {
             var s = caster.PageSlot(i);
             var r = new Rect(sx + (i + 1) * (sw + gap), sy, sw, sw);
-            if (s != null) DrawSlot(r, (i + 1).ToString(), s.hud, s.color, true, s.cd, s.cooldown);
+            if (s != null) DrawSlot(r, (i + 1).ToString(), s.pending ? "В полёте…" : s.hud, s.color, true, s.cd, s.cooldown);
             else DrawSlot(r, (i + 1).ToString(), "", Color.gray, false, 0, 1);
         }
         if (caster.Pages > 1)

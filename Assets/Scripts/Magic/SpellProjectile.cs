@@ -33,6 +33,15 @@ public class SpellProjectile : MonoBehaviour
     Vector3 dir;
     Color color;
     bool done;
+    public System.Action<bool> resolved;
+    bool reported, affected;
+    void Report(bool hit)
+    {
+        if (reported) return;
+        reported = true;
+        resolved?.Invoke(hit);
+    }
+    void OnDestroy() { Report(false); }
     GameObject core;
     Light lightC;
     TrailRenderer trail;
@@ -70,7 +79,7 @@ public class SpellProjectile : MonoBehaviour
         p.homingTarget = homingTarget;
         p.homing = homing;
         p.unblockable = unblockable;
-        p.radius = Mathf.Max(0.2f, size);
+        p.radius = hostile ? Mathf.Max(0.2f, size) : 0.12f;
         return p;
     }
 
@@ -146,12 +155,15 @@ public class SpellProjectile : MonoBehaviour
             SFX.Play(type == SpellType.Glacius ? "freeze" : "hit", 0.4f);
         }
         if (core != null) core.SetActive(false);
+        Report(affected);
         if (lightC != null) lightC.enabled = false;
         Destroy(gameObject, trail != null ? trail.time : 0f);
     }
 
     void Apply(ISpellTarget t, Vector3 point)
     {
+        if (t is Enemy enemy && enemy.IsDead) return;
+        affected = true;
         t.OnSpellHit(new SpellHit { type = type, damage = damage, point = point, dir = dir, source = owner, unblockable = unblockable, finisher = finisher });
     }
 

@@ -88,6 +88,14 @@ public partial class SmokeTest : MonoBehaviour
         yield return Frames(30);
         yield return Shot("01_title");
         HUD.I.StartGame();
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmAimOnly") >= 0)
+        {
+            yield return AimHitTest();
+            foreach (var note in notes) Debug.Log("HM_SMOKE_NOTE " + note);
+            Debug.Log($"HM_AIM_RESULT errors={errors}");
+            Application.Quit(errors == 0 ? 0 : 1);
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-hmRoomsVisible") >= 0)
         {
             yield return RoomsVisibleTest();

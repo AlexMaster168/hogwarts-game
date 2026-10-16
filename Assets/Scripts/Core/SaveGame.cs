@@ -9,6 +9,7 @@ using UnityEngine;
 [Serializable] public class GameSave
 {
     public int version=1,house,pages,gold,earned,defeated,herbs,seals;
+    public int skin;
     public string step;
     public Vector3 position;
     public float health,playTime,harvestRemaining,mealRemaining,hour;
@@ -49,7 +50,7 @@ public class SaveGame : MonoBehaviour
         var p=GameManager.I.player;var inv=p.inventory;var q=QuestManager.I;
         return new GameSave
         {
-            sagaComplete=q.sagaComplete,horrorComplete=q.horrorComplete,step=q.step.ToString(),house=q.house,pages=q.pages,gold=inv.galleons,earned=inv.earnedTotal,defeated=q.enemiesDefeated,
+            skin=p.skin,sagaComplete=q.sagaComplete,horrorComplete=q.horrorComplete,step=q.step.ToString(),house=q.house,pages=q.pages,gold=inv.galleons,earned=inv.earnedTotal,defeated=q.enemiesDefeated,
             herbs=RoomServices.I.herbs,seals=q.seals,position=p.transform.position,health=p.health.current,playTime=q.playTime,
             harvestRemaining=Mathf.Max(0,RoomServices.I.harvestReady-Time.time),mealRemaining=Mathf.Max(0,RoomServices.I.mealReady-Time.time),
             broom=p.hasBroom,female=p.female,alohomora=p.alohomora,vaults=LockedVault.All.Select(v=>v.open).ToArray(),difficulty=Difficulty.Index,ancient=p.ancientUnlocked,protego=p.caster.protegoLearned,trials=Trials.I.done.ToArray(),
@@ -103,6 +104,7 @@ public class SaveGame : MonoBehaviour
         var p=GameManager.I.player;var inv=p.inventory;var q=QuestManager.I;
         q.house=d.house;if(d.house>=0)p.SetHouse(d.house);q.pages=d.pages;q.enemiesDefeated=d.defeated;q.playTime=d.playTime;
         p.SetGender(d.female);
+        p.SetSkin(d.skin);
         Difficulty.Set(d.difficulty);
         p.hasBroom=d.broom;p.ancientUnlocked=d.ancient;p.caster.protegoLearned=d.protego;
         p.caster.learned.Clear();foreach(var s in p.caster.catalog)s.learned=false;
