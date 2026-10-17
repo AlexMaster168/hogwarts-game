@@ -5,7 +5,7 @@ public class CameraRig : MonoBehaviour
 {
     public Transform target;
     public float yaw, pitch = 12f;
-    public float sensitivity = 2.2f;
+    public float sensitivity = 3.2f;
     PlayerController pc;
     Vector3 pivot;
     float dist = 5f, shake;

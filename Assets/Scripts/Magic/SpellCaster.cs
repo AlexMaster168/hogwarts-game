@@ -151,22 +151,18 @@ public class SpellCaster : MonoBehaviour
 
     void UpdateTarget()
     {
-        target = null;
         var cam = pc.cam.transform;
-        if (WandAim.Trace(cam.position, cam.forward, 150f, pc.transform, 0f, out var hit))
-        {
-            var candidate = hit.collider.GetComponentInParent<Targetable>();
-            if (candidate != null && candidate.Alive) target = candidate;
-        }
+        target = WandAim.SelectTarget(cam.position, cam.forward, wandTip.position, pc.transform, target);
     }
 
     public Vector3 AimPoint()
     {
         var cam = pc.cam.transform;
+        if (target != null && target.Alive && HasLineTo(target.AimPoint, target.transform))
+            return target.AimPoint;
         return WandAim.Trace(cam.position, cam.forward, 150f, pc.transform, 0f, out var hit)
             ? hit.point : cam.position + cam.forward * 150f;
     }
-
     public Vector3 WandImpact(out bool valid, out bool blocked)
     {
         var aim = AimPoint();
@@ -220,7 +216,7 @@ public class SpellCaster : MonoBehaviour
         var from = wandTip.position;
         var color = finisher ? new Color(1f, 0.65f, 0.25f) : BasicColor;
         var p = SpellProjectile.Spawn(SpellType.Basic, from, aim - from, pc.gameObject, (finisher ? 26f : 10f) * Dmg, finisher ? 56f : 48f, color, false,
-            null, 0f, false, finisher ? 0.4f : 0.22f);
+            target != null ? target.transform : null, 12f, false, finisher ? 0.4f : 0.22f);
         p.finisher = finisher;
         if (target != null) p.homingHeight = target.aimHeight;
         SFX.Play(finisher ? "heavy" : "cast", finisher ? 0.5f : 0.35f);
@@ -262,7 +258,7 @@ public class SpellCaster : MonoBehaviour
         var from = wandTip.position;
         s.pending = true;
         var p = SpellProjectile.Spawn(s.type, from, aim - from, pc.gameObject, s.damage * Dmg, s.speed, s.color, false,
-            null, 0f, false, s.size);
+            target != null ? target.transform : null, 12f, false, s.size);
         p.resolved = hit => { s.pending = false; if (hit) s.cd = cost; };
         if (target != null) p.homingHeight = target.aimHeight;
         if (s.unforgivable)
